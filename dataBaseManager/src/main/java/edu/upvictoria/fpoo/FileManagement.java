@@ -26,6 +26,7 @@ public class FileManagement {
     public static void initialValidations(){
         boolean flag = false;
 
+        System.out.println("Tienes que asignar un $PATH$ a la BBDD (comando USE $PATH$): ");
         // Set the paths
         do {
             if(checkFiles()) flag = true;
@@ -49,18 +50,31 @@ public class FileManagement {
         if(pathFolder.exists())
             return true;
 
-        String pathForFile;
+        String query;
         try {
-            System.out.println("Ingresa el path *relativo* donde se guardará la base de datos: ");
-            pathForFile = bf.readLine();
-
-            if(pathForFile.equals("")||pathForFile.contains(" ")) {
-                System.out.println("Entrada inválida");
-                return false;
-            }
+            System.out.println("Ingresa el query: ");
+            query = bf.readLine();
         } catch (IOException e){
             System.out.println("Entrada equivocada");
             return false;
+        }
+
+        String pathForFile = "";
+        try{
+            String[] queryBrk = query.split(" ");
+
+            if(queryBrk.length > 2) return false;
+
+            if(queryBrk[0].equalsIgnoreCase("USE"))
+                pathForFile = queryBrk[1];
+
+            if(pathForFile.equals("")||pathForFile.contains(" ")) {
+                System.out.println("Tienes que asignar el path a la BBDD");
+                return false;
+            }
+
+        } catch (IndexOutOfBoundsException e){
+            System.out.println("Sintaxis equivocada");
         }
 
         // I create the file in which im gonna store the path of the database system

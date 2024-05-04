@@ -30,11 +30,23 @@ public class App {
         boolean runFlag = true;
 
         // Here the user is gonna insert the queries
+        String query = "";
         do {
-            System.out.println("Ingresa la query: ");
-            String query = Utilities.readQuery(bf);
+            if(query.isEmpty())
+                System.out.println("Ingresa la query (ingresa '|' si ya no hay mas ENTER): ");
 
-            Parser.parseQuery(query);
+            String creatingQuery = Utilities.readQuery(bf).trim();
+
+            if (creatingQuery.equals("|")){
+                Parser.parseQuery(query);
+                query = "";
+            }
+            else {
+                if (!query.isEmpty()) {
+                    query += " ";
+                }
+                query += creatingQuery;
+            }
         }while (runFlag);
     }
 
