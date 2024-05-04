@@ -1,13 +1,11 @@
 package edu.upvictoria.fpoo;
 
-/**
- * Hello world!
- *
- */
-public class App 
-{
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
+import java.io.File;
+
+public class App {
+    public static void main(String[] args) {
+        // Initial validations for the entire work of the program
+        FileManagement.initialValidations();
+        
     }
 }
