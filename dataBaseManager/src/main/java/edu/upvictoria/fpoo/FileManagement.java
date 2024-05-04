@@ -5,6 +5,7 @@ import java.io.*;
 /**
  * Class to manage files
  * @author Joshua Arrazola
+ * @matricula 2230023
  * */
 public class FileManagement {
     // Read without Scanner
@@ -19,6 +20,9 @@ public class FileManagement {
     // path to the database
     private static String databasePath = null;
 
+    /**
+     * Function to validate initial conditions for the program
+     * */
     public static void initialValidations(){
         boolean flag = false;
 
@@ -97,4 +101,12 @@ public class FileManagement {
         return databasePath;
     }
 
+    // -------------------------------------------------
+    //               Getters and Setters
+    // -------------------------------------------------
+
+
+    public static String getDatabasePath() {
+        return databasePath;
+    }
 }
