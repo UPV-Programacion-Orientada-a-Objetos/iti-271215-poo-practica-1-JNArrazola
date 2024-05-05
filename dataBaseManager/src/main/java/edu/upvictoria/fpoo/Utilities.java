@@ -48,6 +48,7 @@ public class Utilities {
         types.add("INT");
         types.add("VARCHAR");
         types.add("DATE");
+        types.add("FLOAT");
         types.add("DOUBLE");
     }
 

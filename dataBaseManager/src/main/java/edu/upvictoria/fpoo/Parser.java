@@ -4,8 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Type;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 
 /**
@@ -87,6 +85,8 @@ public class Parser {
 
         for(File file : files){
             String name = file.getName().substring(0, file.getName().indexOf("."));
+            if(name.contains("aux"))
+                continue;
             System.out.println(name);
         }
     }
@@ -131,8 +131,12 @@ public class Parser {
             tableName += query.charAt(i);
         }
 
-        String columnsStr = "";
+        if(tableName.contains("(")||tableName.equalsIgnoreCase("")){
+            System.out.println("Caracteres inválidos");
+            return;
+        }
 
+        String columnsStr = "";
         for (int i = index; i < query.length(); i++) {
 
             if ((i == query.length() - 1 && query.charAt(i) == ')') ||
@@ -141,6 +145,7 @@ public class Parser {
 
             columnsStr += query.charAt(i);
         }
+
         columnsStr = columnsStr.trim();
         ArrayList<String> parseCreateRequest = new ArrayList<String>();
 
@@ -166,14 +171,11 @@ public class Parser {
 
         for (int i = 0; i < brkQuery.length; i++) brkQuery[i] = brkQuery[i].trim();
 
-
         ArrayList<TypeBuilder> types = new ArrayList<TypeBuilder>();
         boolean primaryKey = false;
-        for(String s : brkQuery) System.out.println(s);
-
         for(String s : brkQuery){
             String name = "", length = "", type = "";
-            int isNull = 0;
+            boolean isPrimaryKey = false, canBeNull = true;
 
             String[] brokenSentence = s.split(" ");
 
@@ -186,6 +188,7 @@ public class Parser {
             try{
                 name = brokenSentence[0];
 
+                // Determine type of the row
                 if(brokenSentence[1].contains("(")){
                     String t = "";
                     String l = "";
@@ -203,7 +206,6 @@ public class Parser {
                     length = l;
                     type = t;
                     if(type.equalsIgnoreCase("INT")||
-                            type.equalsIgnoreCase("FLOAT")||
                     type.equalsIgnoreCase("DATE")){
                         System.out.println("No se puede añadir precisión a ese tipo de dato");
                         return;
@@ -215,6 +217,7 @@ public class Parser {
             } catch (IndexOutOfBoundsException e){
                 System.out.println("Sintaxis incorrecta");
             }
+            // Ending of determine type block
 
             // Validations
             if(Utilities.isReservedWord(name)||Utilities.isType(name)){
@@ -223,23 +226,55 @@ public class Parser {
             }
 
             if(!Utilities.isType(type)){
-                System.out.println(type);
                 System.out.println("No es un tipo válido");
                 return;
             }
 
             try{
-                Integer.parseInt(length);
+                Integer parse = Integer.parseInt(length);
+                if(parse!=-1&&parse<=0) throw new NumberFormatException("Longitud inválida");
             } catch (NumberFormatException e){
-                System.out.println("Longitud inválida");
+                System.out.println(e.getMessage());
                 return;
             }
-            // Validations
 
-            System.out.println(name);
-            System.out.println(length);
-            System.out.println(type);
+            // Validations
+            try{
+                if(brokenSentence[2].equalsIgnoreCase("NOT")&&brokenSentence[3].equalsIgnoreCase("NULL"))
+                    canBeNull = false;
+                else {
+                    throw new RuntimeException("Sintaxis inválida");
+                }
+            } catch (IndexOutOfBoundsException ignored){}
+            catch (RuntimeException e){
+                System.out.println(e.getMessage());
+                return;
+            }
+
+            try{
+                if(brokenSentence[4].equalsIgnoreCase("PRIMARY")&&brokenSentence[5].equalsIgnoreCase("KEY")){
+                    if(primaryKey)
+                        throw new RuntimeException("No puede haber dos primary keys");
+                    isPrimaryKey = true;
+                    primaryKey = true;
+                } else
+                    throw new RuntimeException("Sintaxis incorrecta");
+
+            } catch (IndexOutOfBoundsException ignored){}
+            catch (RuntimeException e){
+                System.out.println(e.getMessage());
+                return;
+            }
+
+            types.add(new TypeBuilder(name, canBeNull, type ,Integer.parseInt(length), isPrimaryKey));
         }
+
+        if(!primaryKey){
+            System.out.println("Se debe establecer una Primary Key");
+            return;
+        }
+
+        FileManagement.createFileTable(tableName, types);
     }
 
     /**

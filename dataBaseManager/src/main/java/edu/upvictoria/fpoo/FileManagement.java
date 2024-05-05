@@ -1,6 +1,8 @@
 package edu.upvictoria.fpoo;
 
 import java.io.*;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 /**
  * Class to manage files
@@ -96,5 +98,58 @@ public class FileManagement {
 
     public static String getDatabasePath() {
         return databasePath;
+    }
+
+    public static ArrayList<String> createDatatypeString(ArrayList<TypeBuilder> rows){
+        ArrayList<String> auxFileCodification = new ArrayList<>();
+
+        for(TypeBuilder row : rows){
+            String coder = "";
+
+            coder+=row.getName() + ",";
+            coder+=row.getCanBeNull() + ",";
+            coder+=row.getDataType() + ",";
+            coder+=row.getLength() + ",";
+            coder+=row.isPrimaryKey();
+
+            auxFileCodification.add(coder);
+        }
+
+        return auxFileCodification;
+    }
+
+    public static void createFileTable(String tableName, ArrayList<TypeBuilder> rows){
+        if(rows.isEmpty()){
+            System.out.println("Query incompleto");
+            return;
+        }
+
+        String headerTable = "";
+        for (int i = 0; i < rows.size(); i++) {
+            headerTable+=rows.get(i).getName();
+
+            if(i!=rows.size()-1)
+                headerTable+=",";
+        }
+
+        ArrayList<String> codec = createDatatypeString(rows);
+        try(BufferedWriter bf = new BufferedWriter(new FileWriter(databasePath + "/" + tableName + ".csv"))){
+            bf.write(headerTable);
+        } catch (IOException e){
+            System.out.println("No se puede crear el archivo");
+            return;
+        }
+
+        try(BufferedWriter bf = new BufferedWriter(new FileWriter(databasePath + "/" + tableName + "_aux.csv"))){
+            for(String row : codec){
+                bf.write(row);
+                bf.newLine();
+            }
+        } catch (IOException e){
+            System.out.println("No se pudo crear el archivo auxiliar");
+            File file = new File(databasePath + "/" + tableName + ".csv");
+            file.delete();
+            return;
+        }
     }
 }

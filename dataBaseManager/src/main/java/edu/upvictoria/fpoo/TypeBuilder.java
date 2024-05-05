@@ -5,13 +5,15 @@ package edu.upvictoria.fpoo;
  * */
 public class TypeBuilder {
     private final String name;
-    private final boolean isNull;
+    private final boolean canBeNull;
     private final int length;
+    private final String dataType;
     private final boolean primaryKey;
 
-    TypeBuilder(String name, boolean isNull, int length, boolean primaryKey) {
+    TypeBuilder(String name, boolean canBeNull, String dataType, int length, boolean primaryKey) {
         this.name = name;
-        this.isNull = isNull;
+        this.canBeNull = canBeNull;
+        this.dataType = dataType;
         this.length = length;
         this.primaryKey = primaryKey;
     }
@@ -20,15 +22,29 @@ public class TypeBuilder {
         return name;
     }
 
-    public boolean getIsNull(){
-        return isNull;
+    public boolean getCanBeNull(){
+        return canBeNull;
     }
 
     public int getLength() {
         return length;
     }
 
+    public String getDataType() {
+        return dataType;
+    }
+
     public boolean isPrimaryKey() {
         return primaryKey;
+    }
+
+    @Override
+    public String toString() {
+        return "Registro {" +
+                "\n\tName: " + name +
+                "\n\tCan be null: " + canBeNull +
+                "\n\tLength: " + length +
+                "\n\tPrimary key: " + primaryKey+
+                "\n}";
     }
 }
