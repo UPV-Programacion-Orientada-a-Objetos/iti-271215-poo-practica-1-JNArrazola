@@ -1,2 +1,4 @@
 /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/PEDRO
 /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/martin
+/home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/loco
+/home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/PEDRO(VARCHAR(20));

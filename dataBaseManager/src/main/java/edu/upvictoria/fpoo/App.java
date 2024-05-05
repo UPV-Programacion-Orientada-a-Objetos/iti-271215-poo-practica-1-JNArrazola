@@ -4,7 +4,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 /**
- * Actividad 1: Programación Orientada a Objetos
+ * Actividad 1: Biblioteca de sentencias SQL
+ * Asignatura: Programación Orientada a Objetos
  * Docente: Dr. Said Polanco Martagón
  * ---------------------------------------------
  * Alumno: Joshua Nathaniel Arrazola Elizondo

@@ -24,27 +24,14 @@ public class FileManagement {
 
 
     public static void initialValidations(){
-        File file = new File(folderPath);
+        Utilities.fillReservedWords();
+        Utilities.fillTypes();
 
+        File file = new File(folderPath);
         if(!file.exists()){
             file.mkdir();
         }
     }
-
-
-    /**
-     * Function to retrieve the path of the actual database to use it for other fuctions
-     * @Returns String
-     * @return databasePath
-     * *//*
-    private static String retrievePath(){
-        try(BufferedReader bf = new BufferedReader(new FileReader(folderAppPath))){
-            databasePath = bf.readLine();
-        } catch (IOException e){
-            System.out.println("No se pudo leer el archivo");
-        }
-        return databasePath;
-    }*/
 
     /**
      * Function to manage Create Database query
@@ -55,6 +42,11 @@ public class FileManagement {
                 return;
             }
             String name = brkQuery[2];
+
+            if(name.contains("/")){
+                System.out.println("No se pueden utilizar caracteres / como nombre");
+                return;
+            }
 
             File db = new File(appPath + name);
 

@@ -1,12 +1,19 @@
 package edu.upvictoria.fpoo;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.reflect.Type;
+import java.sql.SQLOutput;
+import java.util.ArrayList;
 
 /**
  * Function that parses the query to be able to distinguish between different types of them
  * @author Joshua Arrazola
  * */
 public class Parser {
+    private static final BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
     /**
      * Function to parse the query, and start dividing it to see what type it is and filter if there's a typo
@@ -87,8 +94,8 @@ public class Parser {
     /**
      * Function to manage and also parse CREATE TABLE query
      * */
-    private static void createTable(String query){
-        if(FileManagement.getDatabasePath()==null){
+    private static void createTable(String query) {
+        if (FileManagement.getDatabasePath() == null) {
             System.out.println("No hay path asignado");
             return;
         }
@@ -96,40 +103,143 @@ public class Parser {
         String wordFormed = "";
 
         int index;
-        try{
-            for(index = 0; index < query.length(); index++){
-                if(query.charAt(index)==' '){
-                    if(wordFormed.equals("TABLE")){
+        try {
+            for (index = 0; index < query.length(); index++) {
+                if (query.charAt(index) == ' ') {
+                    if (wordFormed.equals("TABLE")) {
                         ++index;
-                        System.out.println(index);
                         break;
                     }
                     wordFormed = "";
-                } else
-                    if(query.charAt(index)!=' ')
-                        wordFormed += query.charAt(index);
+                } else if (query.charAt(index) != ' ')
+                    wordFormed += query.charAt(index);
 
 
             }
-        } catch (IndexOutOfBoundsException e){
+        } catch (IndexOutOfBoundsException e) {
             System.out.println("Sintaxis equivocada");
             return;
         }
 
         String tableName = "";
 
-        for (int i = index; i < query.length(); i++){
-            if(query.charAt(i)==' '||query.charAt(i)=='('){
+        for (int i = index; i < query.length(); i++) {
+            if (query.charAt(i) == ' ' || query.charAt(i) == '(') {
                 index = i;
                 break;
             }
-            tableName+=query.charAt(i);
+            tableName += query.charAt(i);
         }
 
         String columnsStr = "";
-        for (int i = index; i < query.length(); i++)
-            columnsStr += query.charAt(i);
 
+        for (int i = index; i < query.length(); i++) {
+
+            if ((i == query.length() - 1 && query.charAt(i) == ')') ||
+                    columnsStr.isEmpty() && (query.charAt(i) == '('))
+                continue;
+
+            columnsStr += query.charAt(i);
+        }
+        columnsStr = columnsStr.trim();
+        ArrayList<String> parseCreateRequest = new ArrayList<String>();
+
+        String formedWord = "";
+        for (int i = 0; i < columnsStr.length(); i++) {
+            if (columnsStr.charAt(i) != ' '){
+                formedWord += columnsStr.charAt(i);
+
+                if(i == columnsStr.length()-1)
+                    parseCreateRequest.add(formedWord.trim());
+            }
+            else if(!formedWord.isEmpty()){
+                parseCreateRequest.add(formedWord.trim());
+                formedWord = "";
+            }
+        }
+
+        String midProcessing = "";
+        for(String S : parseCreateRequest) midProcessing+=(S+" ");
+
+
+        String[] brkQuery = midProcessing.split(",");
+
+        for (int i = 0; i < brkQuery.length; i++) brkQuery[i] = brkQuery[i].trim();
+
+
+        ArrayList<TypeBuilder> types = new ArrayList<TypeBuilder>();
+        boolean primaryKey = false;
+        for(String s : brkQuery) System.out.println(s);
+
+        for(String s : brkQuery){
+            String name = "", length = "", type = "";
+            int isNull = 0;
+
+            String[] brokenSentence = s.split(" ");
+
+            if(brokenSentence.length == 0){
+                System.out.println("Sintaxis incorrecta");
+                return;
+            }
+
+            // Name asignation
+            try{
+                name = brokenSentence[0];
+
+                if(brokenSentence[1].contains("(")){
+                    String t = "";
+                    String l = "";
+                    boolean flag = false;
+
+                    for (int i = 0; i < brokenSentence[1].length(); i++) {
+                        if(brokenSentence[1].charAt(i) == '('||flag){
+                            if(Character.isDigit(brokenSentence[1].charAt(i)))
+                                l+=brokenSentence[1].charAt(i);
+
+                            flag = true;
+                        } else
+                            t+=brokenSentence[1].charAt(i);
+                    }
+                    length = l;
+                    type = t;
+                    if(type.equalsIgnoreCase("INT")||
+                            type.equalsIgnoreCase("FLOAT")||
+                    type.equalsIgnoreCase("DATE")){
+                        System.out.println("No se puede añadir precisión a ese tipo de dato");
+                        return;
+                    }
+                } else{
+                    type = brokenSentence[1];
+                    length = "-1";
+                }
+            } catch (IndexOutOfBoundsException e){
+                System.out.println("Sintaxis incorrecta");
+            }
+
+            // Validations
+            if(Utilities.isReservedWord(name)||Utilities.isType(name)){
+                System.out.println("El nombre de una columna no puede tener palabras reservadas");
+                return;
+            }
+
+            if(!Utilities.isType(type)){
+                System.out.println(type);
+                System.out.println("No es un tipo válido");
+                return;
+            }
+
+            try{
+                Integer.parseInt(length);
+            } catch (NumberFormatException e){
+                System.out.println("Longitud inválida");
+                return;
+            }
+            // Validations
+
+            System.out.println(name);
+            System.out.println(length);
+            System.out.println(type);
+        }
     }
 
     /**
@@ -165,8 +275,23 @@ public class Parser {
 
         for(File file : files)
             if(file.getName().equalsIgnoreCase(name)){
-                file.delete();
-                System.out.println("Tabla borrada");
+                System.out.println("¿Seguro que deseas borrar la tabla(y/n)?");
+
+                String answ;
+                try{
+                    answ = bf.readLine();
+
+                    if(answ.equalsIgnoreCase("y")){
+                        file.delete();
+                        System.out.println("Tabla borrada éxitosamente");
+                    } else {
+                        System.out.println("Tabla no eliminada");
+                    }
+
+                } catch (IOException e){
+                    System.out.println("Input Exception");
+                }
+
                 return;
             }
         System.out.println("No se borró ninguna tabla");
@@ -174,7 +299,7 @@ public class Parser {
 
 
     /**
-     * Function to validate parenthesis and brackets
+     * Function to validate parenthesis
      * @return boolean
      * */
     public static boolean parenthesisCheck(String query){
