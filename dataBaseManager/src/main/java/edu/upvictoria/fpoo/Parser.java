@@ -21,7 +21,12 @@ public class Parser {
 
         System.out.println(query);
         try{
-            if(brokeStr[0].equalsIgnoreCase("UPDATE")){ // TODO: Update
+            if(brokeStr[0].equalsIgnoreCase("USE")){
+                FileManagement.useDatabase(query, brokeStr);
+            } else if(brokeStr[0].equalsIgnoreCase("CREATE")&&brokeStr[1].equalsIgnoreCase("DATABASE")){
+                FileManagement.createDatabase(query, brokeStr);
+            }
+            else if(brokeStr[0].equalsIgnoreCase("UPDATE")){ // TODO: Update
                 System.out.println("this is an update");
             } else if(brokeStr[0].equalsIgnoreCase("DELETE")&&brokeStr[1].equalsIgnoreCase("FROM")){ // TODO: Delete from
                 System.out.println("this is a delete");
@@ -53,6 +58,11 @@ public class Parser {
      * Function to manage show tables query
      * */
     private static void showTables(String query, String[] brokeStr){
+        if(FileManagement.getDatabasePath()==null){
+            System.out.println("No hay path asignado");
+            return;
+        }
+
         if(brokeStr.length > 2){
             System.out.println("Sintaxis incorrecta");
             return;
@@ -78,6 +88,11 @@ public class Parser {
      * Function to manage and also parse CREATE TABLE query
      * */
     private static void createTable(String query){
+        if(FileManagement.getDatabasePath()==null){
+            System.out.println("No hay path asignado");
+            return;
+        }
+
         String wordFormed = "";
 
         int index;
@@ -121,6 +136,11 @@ public class Parser {
      * Function to manage drop table function
      * */
     private static void dropTable(String query, String[] brokeStr){
+        if(FileManagement.getDatabasePath()==null){
+            System.out.println("No hay path asignado");
+            return;
+        }
+
         if(brokeStr.length > 3||query.contains("{")||query.contains("}")){
             System.out.println("Sintaxis incorrecta");
             return;

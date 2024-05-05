@@ -1,1 +1,2 @@
-/home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/PATH/database
+/home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/PEDRO
+/home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/martin
