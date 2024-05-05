@@ -60,4 +60,8 @@ public class Utilities {
         return types.contains(type.toUpperCase());
     }
 
+    public static boolean hasValidChars(String str){
+        return !(str.contains(".")|| str.contains("/")||
+                str.contains("|")||str.contains("&"));
+    }
 }

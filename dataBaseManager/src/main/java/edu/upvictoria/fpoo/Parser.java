@@ -124,14 +124,15 @@ public class Parser {
         String tableName = "";
 
         for (int i = index; i < query.length(); i++) {
-            if (query.charAt(i) == ' ' || query.charAt(i) == '(') {
+            if (query.charAt(i) == '(') {
                 index = i;
                 break;
             }
             tableName += query.charAt(i);
         }
 
-        if(tableName.contains("(")||tableName.equalsIgnoreCase("")){
+        tableName = tableName.trim();
+        if(!Utilities.hasValidChars(tableName)){
             System.out.println("Caracteres inválidos");
             return;
         }
@@ -187,6 +188,11 @@ public class Parser {
             // Name asignation
             try{
                 name = brokenSentence[0];
+
+                if(!Utilities.hasValidChars(name)){
+                    System.out.println("Nombres de columna inválidos");
+                    return;
+                }
 
                 // Determine type of the row
                 if(brokenSentence[1].contains("(")){
@@ -300,7 +306,7 @@ public class Parser {
             return;
         }
 
-        if(name.isEmpty()||name.contains(".csv")) {
+        if(name.isEmpty()||name.contains(".csv")||name.contains(".txt")) {
             System.out.println("Sintaxis incorrecta.");
             return;
         }

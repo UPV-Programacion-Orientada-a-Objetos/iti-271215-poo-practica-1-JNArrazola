@@ -135,12 +135,13 @@ public class FileManagement {
         ArrayList<String> codec = createDatatypeString(rows);
         try(BufferedWriter bf = new BufferedWriter(new FileWriter(databasePath + "/" + tableName + ".csv"))){
             bf.write(headerTable);
+            bf.newLine();
         } catch (IOException e){
             System.out.println("No se puede crear el archivo");
             return;
         }
 
-        try(BufferedWriter bf = new BufferedWriter(new FileWriter(databasePath + "/" + tableName + "_aux.csv"))){
+        try(BufferedWriter bf = new BufferedWriter(new FileWriter(databasePath + "/" + tableName + "_aux.txt"))){
             for(String row : codec){
                 bf.write(row);
                 bf.newLine();
