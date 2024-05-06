@@ -92,13 +92,17 @@ public class FileManagement {
     }
 
     // -------------------------------------------------
-    //               Getters and Setters
+    //               Start: Getters and Setters
     // -------------------------------------------------
 
 
     public static String getDatabasePath() {
         return databasePath;
     }
+
+    // -------------------------------------------------
+    //               End: Getters and Setters
+    // -------------------------------------------------
 
     public static ArrayList<String> createDatatypeString(ArrayList<TypeBuilder> rows){
         ArrayList<String> auxFileCodification = new ArrayList<>();
@@ -153,4 +157,54 @@ public class FileManagement {
             return;
         }
     }
+
+    public static boolean searchForTable(String name){
+        File[] files = new File(databasePath).listFiles();
+        for(File file : files)
+            if(file.getName().equals(name+".csv"))
+                return true;
+        return false;
+    }
+
+    public static boolean verifyDuplicatesTableName(String name){
+        File[] files = new File(databasePath).listFiles();
+
+        try {
+            for (File file : files) {
+                String[] fileWords = file.getName().split("/");
+                String fileName = fileWords[fileWords.length - 1];
+
+                if (fileName.equals(name + ".csv"))
+                    return false;
+
+            }
+        } catch (NullPointerException ignore){}
+
+        return true;
+    }
+
+    public static ArrayList<TypeBuilder> decompressInfo(String name){
+            ArrayList<TypeBuilder> rowsType = new ArrayList<>();
+            try(BufferedReader br = new BufferedReader(new FileReader(databasePath + "/" + name + "_aux.txt"))){
+                String line;
+                while ((line = br.readLine()) != null) {
+                    TypeBuilder tp = new TypeBuilder();
+
+                    String[] ln = line.split(",");
+                    tp.setName(ln[0]);
+                    tp.setCanBeNull(Boolean.parseBoolean(ln[1]));
+                    tp.setDataType(ln[2]);
+                    tp.setLength(Integer.parseInt(ln[3]));
+                    tp.setPrimaryKey(Boolean.parseBoolean(ln[4]));
+
+                    rowsType.add(tp);
+                }
+            } catch (IOException e){
+                System.out.println("Archivo no encontrado");
+                return rowsType;
+            }
+
+        return rowsType;
+    }
+
 }

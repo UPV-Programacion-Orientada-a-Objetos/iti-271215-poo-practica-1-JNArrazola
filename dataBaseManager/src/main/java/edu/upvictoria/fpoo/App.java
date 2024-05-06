@@ -34,11 +34,11 @@ public class App {
         String query = "";
         do {
             if(query.isEmpty())
-                System.out.println("Ingresa la query (ingresa '|' si ya no hay mas ENTER): ");
+                System.out.println("Ingresa la query (ingresa 'x' si ya no hay mas ENTER): ");
 
             String creatingQuery = Utilities.readQuery(bf).trim();
 
-            if (creatingQuery.equals("|")){
+            if (creatingQuery.equals("X")){
                 Parser.parseQuery(query);
                 query = "";
             }

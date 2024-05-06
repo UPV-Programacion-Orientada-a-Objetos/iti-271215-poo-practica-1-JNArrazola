@@ -1,2 +1,1 @@
 ID,false,INT,-1,true
-HEIGHT,true,FLOAT,-1,false

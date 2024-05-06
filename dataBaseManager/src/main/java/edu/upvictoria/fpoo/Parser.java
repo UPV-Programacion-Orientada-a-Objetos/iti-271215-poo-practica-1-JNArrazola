@@ -24,7 +24,6 @@ public class Parser {
             return;
         }
 
-        System.out.println(query);
         try{
             if(brokeStr[0].equalsIgnoreCase("USE")){
                 FileManagement.useDatabase(query, brokeStr);
@@ -38,7 +37,7 @@ public class Parser {
             } else if(brokeStr[0].equalsIgnoreCase("SELECT")){ // TODO: Select
                 System.out.println("this is a select");
             } else if(brokeStr[0].equalsIgnoreCase("INSERT")&& brokeStr[1].equalsIgnoreCase("INTO")){ // TODO: Insert into
-                System.out.println("this is a insert");
+                insertInto(query);
             } else if(brokeStr[0].equalsIgnoreCase("CREATE")&&brokeStr[1].equalsIgnoreCase("TABLE")){ // TODO: Create table
                 createTable(query);
             } else if(brokeStr[0].equalsIgnoreCase("SHOW")&&brokeStr[1].equalsIgnoreCase("TABLES")){ // Show table WORKING
@@ -135,6 +134,9 @@ public class Parser {
         if(!Utilities.hasValidChars(tableName)){
             System.out.println("Caracteres inválidos");
             return;
+        } else if(!FileManagement.verifyDuplicatesTableName(tableName)){
+            System.out.println("El nombre de la tabla está repetido");
+            return;
         }
 
         String columnsStr = "";
@@ -145,6 +147,11 @@ public class Parser {
                 continue;
 
             columnsStr += query.charAt(i);
+        }
+
+        if(columnsStr.isEmpty()){
+            System.out.println("No hay argumentos");
+            return;
         }
 
         columnsStr = columnsStr.trim();
@@ -336,6 +343,124 @@ public class Parser {
                 return;
             }
         System.out.println("No se borró ninguna tabla");
+    }
+
+    public static void  insertInto(String query){
+        if(FileManagement.getDatabasePath() == null){
+            System.out.println("No hay ninguna base de datos seleccionada");
+            return;
+        }
+
+        int index = 0;
+        String formedWord = "";
+        boolean flag = false;
+        for (int i = 0; i < query.length(); i++) {
+            if(query.charAt(i) == ' '){
+                if(formedWord.equalsIgnoreCase("INSERT")){
+                    formedWord = "";
+                }  else if(formedWord.equalsIgnoreCase("INTO")){
+                    flag = true;
+                    index = ++i;
+                    break;
+                }
+            } else
+                formedWord+=query.charAt(i);
+
+        }
+
+        if(!flag) {
+            System.out.println("Query incompleta");
+            return;
+        }
+
+        try{
+           char test = query.charAt(index);
+        } catch (IndexOutOfBoundsException e){
+            throw new IndexOutOfBoundsException("Sintaxis incorrecta");
+        }
+
+        String tableName = "";
+        for (int i = index; i < query.length(); i++) {
+            if(query.charAt(i) == ' '){
+                insertAllValues(tableName, i + 1, query);
+                return;
+            } else if(query.charAt(i) == '('){
+                insertSomeValues(tableName, i + 1, query);
+                return;
+            }
+            tableName+=query.charAt(i);
+        }
+
+    }
+
+    private static void insertAllValues(String name, int index, String query){
+        if(!FileManagement.searchForTable(name)){
+            System.out.println("Nombre de tabla inválido");
+            return;
+        }
+
+        try{
+            char test = query.charAt(index);
+        }  catch (IndexOutOfBoundsException e){
+            throw new IndexOutOfBoundsException("Sintaxis incorrecta");
+        }
+
+        String into = "";
+        for (int i = index; i < query.length(); i++) {
+            if(query.charAt(i) == ' '){
+                if(into.equalsIgnoreCase("VALUES")){
+                    index = i;
+                    break;
+                }
+                else {
+                    System.out.println("Sintaxis incorrecta");
+                    return;
+                }
+            }
+            into+=query.charAt(i);
+        }
+        index++;
+
+        try{
+            char test = query.charAt(index);
+        } catch (IndexOutOfBoundsException e){
+            System.out.println("Sintaxis incorrecta");
+            return;
+        }
+
+        if(query.charAt(index)!='('){
+            System.out.println("Sintaxis incorrecta");
+            return;
+        }
+
+        String types = "";
+        for (int i = index; i < query.length(); i++)
+            if(query.charAt(i)!='('&&query.charAt(i)!=')')
+                types+=query.charAt(i);
+
+        if (types.isEmpty()){
+            System.out.println("Los tipos no pueden estar vacíos");
+            return;
+        }
+
+        String[] entries = types.split(",");
+        for (int i = 0; i < entries.length; i++)
+            entries[i] = entries[i].trim();
+
+        // Verify entries
+        ArrayList<TypeBuilder> rows = FileManagement.decompressInfo(name);
+        for (TypeBuilder row : rows)
+            System.out.println(row.toString());
+
+        // TODO: i decode data, now i have to validate entries and datatypes, also the number of entries has to be the same as the datatype
+    }
+
+    private static void insertSomeValues(String name, int index, String query){
+        try{
+            char test = name.charAt(index);
+        }  catch (IndexOutOfBoundsException e){
+            throw new IndexOutOfBoundsException("Sintaxis incorrecta");
+        }
     }
 
 
