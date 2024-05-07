@@ -1,8 +1,8 @@
 package edu.upvictoria.fpoo;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 
 /**
@@ -47,10 +47,11 @@ public class FileManagement {
 
         if(!path.contains("/"))
             throw new FileNotFoundException("Ruta equivocada");
-        
+        if(!path.endsWith("/")) path+="/";
+
+        if(!path.endsWith("/")) databasePath+="/";
 
         File file = new File(path);
-
         if (!file.exists()) {
             try {
                 if (!file.mkdir()) {
@@ -61,14 +62,13 @@ public class FileManagement {
             } catch (IOException e) {
                 throw new FileSystemException("Error al crear el directorio");
             }
-
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(folderAppPath, true))) {
-                bw.write(path);
-                bw.newLine();
-            } catch (Exception e) {
-                throw new FileSystemException("No se pudo escribir el archivo");
-            }
         } else {
+            try {
+                File tempFile = File.createTempFile("writeTest", ".tmp", new File(path));
+                tempFile.delete();
+            } catch (Exception e) {
+                throw new FileSystemException("No tengo permisos");
+            }
             databasePath = path;
             if(!path.endsWith("/")) databasePath+="/";
             return "Base de datos accesada con éxito";
@@ -107,7 +107,7 @@ public class FileManagement {
         return auxFileCodification;
     }
 
-    public static void createFileTable(String tableName, ArrayList<TypeBuilder> rows){
+    public static void createFileTable(String tableName, ArrayList<TypeBuilder> rows) throws Exception {
         if(rows.isEmpty()){
             System.out.println("Query incompleto");
             return;
@@ -126,8 +126,7 @@ public class FileManagement {
             bf.write(headerTable);
             bf.newLine();
         } catch (IOException e){
-            System.out.println("No se puede crear el archivo");
-            return;
+            throw new FileSystemException("No se puede crear el archivo");
         }
 
         try(BufferedWriter bf = new BufferedWriter(new FileWriter(databasePath + "/" + tableName + "_aux.txt"))){
@@ -190,5 +189,4 @@ public class FileManagement {
 
         return rowsType;
     }
-
 }

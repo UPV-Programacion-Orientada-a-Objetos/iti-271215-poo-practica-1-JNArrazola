@@ -2,8 +2,11 @@ package edu.upvictoria.fpoo;
 
 import org.junit.Test;
 import junit.framework.TestCase;
-
 import java.io.File;
+import java.nio.file.FileSystemException;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 /**
  * Unit test for simple App.
@@ -86,5 +89,35 @@ public class AppTest
             assertEquals("No se reconoció la sentencia", Parser.parseQuery(s));
     }
 
+    /**
+     * Use database with a totally new and not existing directory
+     * */
+    @Test
+    public void testUseDatabase_valid() throws Exception {
+        FileManagement.initialValidations();
+        String query = "USE " + (new File("").getAbsolutePath()) + "/testCase";
 
+        String result = Parser.parseQuery(query);
+
+        File expectedFile = new File((new File("").getAbsolutePath()) + "/testCase");
+        assertTrue(expectedFile.exists());
+        assertEquals("Directorio creado con éxito", result);
+        expectedFile.delete();
+    }
+
+
+    /**
+     * Invalid path test
+     * */
+    @Test
+    public void testUseDatabase_invalid() throws Exception {
+        FileManagement.initialValidations();
+        String query = "USE /W";
+
+        Exception generatedException = assertThrows(FileSystemException.class, () -> {
+            Parser.parseQuery(query);
+        });
+
+        assertEquals(generatedException.getMessage(), "Error al crear el directorio");
+    }
 }

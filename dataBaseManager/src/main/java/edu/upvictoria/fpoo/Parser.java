@@ -2,6 +2,7 @@ package edu.upvictoria.fpoo;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.IllegalFormatCodePointException;
 import java.util.zip.DataFormatException;
 
@@ -68,10 +69,11 @@ public class Parser {
         }
 
         for (File file : files) {
-            String name = file.getName().substring(0, file.getName().indexOf("."));
+            String name = file.getName();
             if (name.contains("aux"))
                 continue;
-            System.out.println("* " + name);
+            if(file.getName().contains(".csv")&&!file.getName().contains("~"))
+                System.out.println("* " + name.substring(0, name.indexOf(".csv")));
         }
         return "Listado éxitoso";
     }
@@ -308,116 +310,130 @@ public class Parser {
             return;
         }
 
-        int index = 0;
-        String formedWord = "";
-        boolean flag = false;
-        for (int i = 0; i < query.length(); i++) {
-            if (query.charAt(i) == ' ') {
-                if (formedWord.equalsIgnoreCase("INSERT")) {
-                    formedWord = "";
-                } else if (formedWord.equalsIgnoreCase("INTO")) {
+        String[] parts = query.split("\\s+(?=\\([^)]*\\))|\\s+(?![^(]*\\))");
+
+        for (int i = 0; i < parts.length; i++)
+            parts[i] = parts[i].replaceAll("\\(", "").replaceAll("\\)", "");
+
+        if(parts.length > 6)
+            throw new RuntimeException("Query inválida");
+
+        String name = parts[2];
+
+        if(!FileManagement.searchForTable(name))
+                throw new FileNotFoundException("No se encontró el archivo");
+
+        String columns = parts[3];
+
+        if(!parts[4].equalsIgnoreCase("VALUES"))
+            throw new IllegalArgumentException("Sintaxis no válida");
+
+        String values = parts[5];
+
+        String[] colBrk = columns.split(",");
+        String[] valBrk = values.split(",");
+
+        if(colBrk.length!=valBrk.length)
+            throw new RuntimeException("Sintaxis incorrecta");
+
+        for (int i = 0; i < colBrk.length; i++) {
+            colBrk[i] = colBrk[i].trim();
+            valBrk[i] = valBrk[i].trim();
+        }
+
+        ArrayList<TypeBuilder> types = FileManagement.decompressInfo(name);
+
+        String header;
+        try (BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + name + ".csv"))){
+            header = br.readLine();
+        } catch (IOException e){
+            throw new IOException("No se pudo abrir el archivo");
+        }
+
+        String[] headerBrk = header.split(",");
+
+       /* for (int i = 0; i < headerBrk.length; i++) {
+            boolean f = false;
+            for (int j = 0; j < colBrk.length; j++) {
+                if(colBrk[j].equals(headerBrk[i])){
+                    f = true;
+                    break;
+                }
+            }
+
+            if(!f)
+                throw new RuntimeException("Nombre de columna no encontrado");
+        }*/
+
+        if(header.isEmpty())
+            throw new RuntimeException("Ocurrió un error al leer la base de datos");
+
+        String headerBuilder = "";
+
+        for (int i = 0; i < headerBrk.length; i++) {
+            boolean flag = false;
+            for (int j = 0; j < colBrk.length; j++) {
+                if(colBrk[j].equalsIgnoreCase(headerBrk[i])){
+                    headerBuilder += valBrk[j] + ",";
                     flag = true;
-                    index = ++i;
                     break;
                 }
-            } else
-                formedWord += query.charAt(i);
-
-        }
-
-        if (!flag) {
-            System.out.println("Query incompleta");
-            return;
-        }
-
-        try {
-            char test = query.charAt(index);
-        } catch (IndexOutOfBoundsException e) {
-            throw new IndexOutOfBoundsException("Sintaxis incorrecta");
-        }
-
-        String tableName = "";
-        for (int i = index; i < query.length(); i++) {
-            if (query.charAt(i) == ' ') {
-                insertAllValues(tableName, i + 1, query);
-                return;
-            } else if (query.charAt(i) == '(') {
-                insertSomeValues(tableName, i + 1, query);
-                return;
             }
-            tableName += query.charAt(i);
+            if(!flag)
+                headerBuilder += "null,";
         }
+        headerBuilder = headerBuilder.substring(0, headerBuilder.length() - 1);
 
+        String[] headerBrkValues = headerBuilder.split(",");
+
+        for (int i = 0; i < headerBrkValues.length; i++) {
+            for (int j = 0; j < types.size(); j++) {
+                
+            }
+        }
     }
 
-    private static void insertAllValues(String name, int index, String query) {
-        if (!FileManagement.searchForTable(name)) {
-            System.out.println("Nombre de tabla inválido");
-            return;
-        }
-
-        try {
-            char test = query.charAt(index);
-        } catch (IndexOutOfBoundsException e) {
-            throw new IndexOutOfBoundsException("Sintaxis incorrecta");
-        }
-
-        String into = "";
-        for (int i = index; i < query.length(); i++) {
-            if (query.charAt(i) == ' ') {
-                if (into.equalsIgnoreCase("VALUES")) {
-                    index = i;
-                    break;
-                } else {
-                    System.out.println("Sintaxis incorrecta");
-                    return;
+    public static boolean checkType(TypeBuilder T, String value) throws Exception {
+        switch (T.getDataType()){
+            case "int":
+                try {
+                    Integer p = Integer.parseInt(value);
+                    return true;
+                } catch (NumberFormatException e){
+                    throw new NumberFormatException("Tipo de dato incorrecto");
                 }
-            }
-            into += query.charAt(i);
+            case "float":
+                try{
+                    Float p = Float.parseFloat(value);
+                } catch (NumberFormatException e){
+                    throw new NumberFormatException("Tipo de dato incorrecto");
+                }
+                if(T.getLength()!=-1&&value.length() - 1 - value.indexOf(".") > T.getLength())
+                    throw new NumberFormatException("Precisión equivocada");
+
+                return true;
+
+            case "double":
+                try{
+                    Double p = Double.parseDouble(value);
+                } catch (NumberFormatException e){
+                    throw new NumberFormatException("Tipo de dato incorrecto");
+                }
+                if(T.getLength()!=-1&&value.length() - 1 - value.indexOf(".") > T.getLength())
+                    throw new NumberFormatException("Precisión equivocada");
+                return true;
+            case "varchar":
+                if(value.charAt(0)!='\''&&value.charAt(value.length()-1)!='\'')
+                    throw new NumberFormatException("Tipo de dato incorrecto");
+                if(T.getLength()!=-1&&value.length() > T.getLength())
+                    throw new Exception("Mayor longitud");
+                return true;
         }
-        index++;
 
-        try {
-            char test = query.charAt(index);
-        } catch (IndexOutOfBoundsException e) {
-            System.out.println("Sintaxis incorrecta");
-            return;
-        }
-
-        if (query.charAt(index) != '(') {
-            System.out.println("Sintaxis incorrecta");
-            return;
-        }
-
-        String types = "";
-        for (int i = index; i < query.length(); i++)
-            if (query.charAt(i) != '(' && query.charAt(i) != ')')
-                types += query.charAt(i);
-
-        if (types.isEmpty()) {
-            System.out.println("Los tipos no pueden estar vacíos");
-            return;
-        }
-
-        String[] entries = types.split(",");
-        for (int i = 0; i < entries.length; i++)
-            entries[i] = entries[i].trim();
-
-        // Verify entries
-        ArrayList<TypeBuilder> rows = FileManagement.decompressInfo(name);
-        for (TypeBuilder row : rows)
-            System.out.println(row.toString());
-
-        // TODO: i decode data, now i have to validate entries and datatypes, also the number of entries has to be the same as the datatype
+        return false;
     }
 
-    private static void insertSomeValues(String name, int index, String query) throws Exception {
-        try {
-            char test = name.charAt(index);
-        } catch (IndexOutOfBoundsException e) {
-            throw new IndexOutOfBoundsException("Sintaxis incorrecta");
-        }
-    }
+
 
 
     /**

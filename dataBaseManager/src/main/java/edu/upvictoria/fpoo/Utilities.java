@@ -71,12 +71,13 @@ public class Utilities {
         String query = "";
         do {
             if(query.isEmpty())
-                System.out.println("Ingresa la query (ingresa 'x' si ya no hay mas ENTER): ");
+                System.out.println("Ingresa la query");
 
             String creatingQuery = Utilities.readQuery(bf).trim();
 
-            if (creatingQuery.equals("X")){
-                return query;
+            if (creatingQuery.endsWith(";")){
+                query+=creatingQuery;
+                return query.substring(0, query.indexOf(";"));
             }
             else {
                 if (!query.isEmpty()) {
