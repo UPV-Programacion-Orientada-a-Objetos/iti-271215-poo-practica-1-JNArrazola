@@ -24,31 +24,38 @@ public class App {
     }
 
     /**
-     * Main body of app, user is gonna insert queries and changes are gonna be showed1
+     * Main body of app, user is gonna insert queries and changes are gonna be showed
      * @author Joshua Arrazola
      * */
     public void run(){
         boolean runFlag = true;
 
         // Here the user is gonna insert the queries
-        String query = "";
         do {
-            if(query.isEmpty())
-                System.out.println("Ingresa la query (ingresa 'x' si ya no hay mas ENTER): ");
+            try{
+                String query = "";
+                do {
+                    if(query.isEmpty())
+                        System.out.println("Ingresa la query (ingresa 'x' si ya no hay mas ENTER): ");
 
-            String creatingQuery = Utilities.readQuery(bf).trim();
+                    String creatingQuery = Utilities.readQuery(bf).trim();
 
-            if (creatingQuery.equals("X")){
-                Parser.parseQuery(query);
-                query = "";
-            }
-            else {
-                if (!query.isEmpty()) {
-                    query += " ";
-                }
-                query += creatingQuery;
+                    if (creatingQuery.equals("X")){
+                        System.out.println(Parser.parseQuery(query));
+                        query = "";
+                    }
+                    else {
+                        if (!query.isEmpty()) {
+                            query += " ";
+                        }
+                        query += creatingQuery;
+                    }
+                }while (runFlag);
+            } catch (Exception e){
+                System.out.println(e.getMessage());
             }
         }while (runFlag);
+
     }
 
 }

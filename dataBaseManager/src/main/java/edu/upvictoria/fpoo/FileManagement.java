@@ -39,43 +39,52 @@ public class FileManagement {
     /**
      * Funtion to manage Use Database query
      * */
-    public static void useDatabase(String query, String[] brkQuery) throws Exception {
+    public static String useDatabase(String query, String[] brkQuery) throws Exception {
         if(brkQuery.length>2)
             throw new IndexOutOfBoundsException("Sentencia inválida");
         
         String path = brkQuery[1];
-        
+
         if(!path.contains("/"))
             throw new FileNotFoundException("Ruta equivocada");
         
 
         File file = new File(path);
-        
-        if(!file.exists())
-            try {
-                file.mkdir();
-            } catch (Exception e) {
-                throw new FileSystemException("No se puede crear el archivo");
-            }
-        
 
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(folderAppPath, true))) {
-            bw.write(path);
-            bw.newLine();
-        } catch (Exception e) {
-            throw new FileSystemException("No se pudo escribir el archivo");
+        if (!file.exists()) {
+            try {
+                if (!file.mkdir()) {
+                    throw new IOException("No se puede crear el directorio");
+                }
+            } catch (SecurityException e) {
+                throw new FileSystemException("Permiso denegado para crear el directorio");
+            } catch (IOException e) {
+                throw new FileSystemException("Error al crear el directorio");
+            }
+
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(folderAppPath, true))) {
+                bw.write(path);
+                bw.newLine();
+            } catch (Exception e) {
+                throw new FileSystemException("No se pudo escribir el archivo");
+            }
+        } else {
+            databasePath = path;
+            if(!path.endsWith("/")) databasePath+="/";
+            return "Base de datos accesada con éxito";
         }
+
+        databasePath = path;
+        if(!path.endsWith("/")) databasePath+="/";
+        return "Directorio creado con éxito";
     }
 
     // -------------------------------------------------
     //               Start: Getters and Setters
     // -------------------------------------------------
+    public static String getDatabasePath() { return databasePath; }
 
-
-    public static String getDatabasePath() {
-        return databasePath;
-    }
-
+    public static void setDatabasePath(String databasePath) { FileManagement.databasePath = databasePath; }
     // -------------------------------------------------
     //               End: Getters and Setters
     // -------------------------------------------------
@@ -152,7 +161,6 @@ public class FileManagement {
 
                 if (fileName.equals(name + ".csv"))
                     return false;
-
             }
         } catch (NullPointerException ignore){}
 
