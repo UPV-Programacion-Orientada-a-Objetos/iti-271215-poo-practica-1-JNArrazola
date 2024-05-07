@@ -1,2 +1,0 @@
-id,false,int,-1,true
-f,false,float,-1,false

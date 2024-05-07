@@ -27,8 +27,6 @@ public class Parser {
         try{
             if(brokeStr[0].equalsIgnoreCase("USE")){
                 FileManagement.useDatabase(query, brokeStr);
-            } else if(brokeStr[0].equalsIgnoreCase("CREATE")&&brokeStr[1].equalsIgnoreCase("DATABASE")){
-                FileManagement.createDatabase(query, brokeStr);
             }
             else if(brokeStr[0].equalsIgnoreCase("UPDATE")){ // TODO: Update
                 System.out.println("this is an update");

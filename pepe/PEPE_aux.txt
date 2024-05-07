@@ -1,2 +1,0 @@
-(ID,false,INT,-1,true
-HEIGHT,false,FLOAT,1,false

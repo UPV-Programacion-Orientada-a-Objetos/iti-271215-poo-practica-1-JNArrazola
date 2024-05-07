@@ -2,6 +2,7 @@ package edu.upvictoria.fpoo;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.nio.file.FileSystemException;
 import java.util.ArrayList;
 
 /**
@@ -36,59 +37,34 @@ public class FileManagement {
     }
 
     /**
-     * Function to manage Create Database query
-     * */
-    public static void createDatabase(String query, String[] brkQuery){
-            if(brkQuery.length>3){
-                System.out.println("SINTAXIS INCORRECTA");
-                return;
-            }
-            String name = brkQuery[2];
-
-            if(name.contains("/")){
-                System.out.println("No se pueden utilizar caracteres / como nombre");
-                return;
-            }
-
-            File db = new File(appPath + name);
-
-            if(db.exists()){
-                System.out.println("La base de datos ya existe");
-                return;
-            }
-            db.mkdir();
-
-            try(BufferedWriter bw = new BufferedWriter(new FileWriter(folderAppPath, true))){
-                bw.write(appPath + name);
-                bw.newLine();
-            } catch(IOException e){
-                System.out.println("El archivo FOLDER PATH no existe, archivo creado");
-                File f = new File(folderAppPath);
-                f.mkdir();
-            }
-
-    }
-
-    /**
      * Funtion to manage Use Database query
      * */
-    public static void useDatabase(String query, String[] brkQuery){
-        if(brkQuery.length>2){
-            System.out.println("SINTAXIS INCORRECTA");
-            return;
+    public static void useDatabase(String query, String[] brkQuery) throws Exception {
+        if(brkQuery.length>2)
+            throw new IndexOutOfBoundsException("Sentencia inválida");
+        
+        String path = brkQuery[1];
+        
+        if(!path.contains("/"))
+            throw new FileNotFoundException("Ruta equivocada");
+        
+
+        File file = new File(path);
+        
+        if(!file.exists())
+            try {
+                file.mkdir();
+            } catch (Exception e) {
+                throw new FileSystemException("No se puede crear el archivo");
+            }
+        
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(folderAppPath, true))) {
+            bw.write(path);
+            bw.newLine();
+        } catch (Exception e) {
+            throw new FileSystemException("No se pudo escribir el archivo");
         }
-
-        String name = brkQuery[1];
-
-        File db = new File(appPath + name);
-
-        if(!db.exists()){
-            System.out.println("La base de datos no existe [utiliza el comando create table]");
-            return;
-        }
-
-        System.out.println("Acceso a la base de datos éxitoso");
-        databasePath = appPath + name;
     }
 
     // -------------------------------------------------
