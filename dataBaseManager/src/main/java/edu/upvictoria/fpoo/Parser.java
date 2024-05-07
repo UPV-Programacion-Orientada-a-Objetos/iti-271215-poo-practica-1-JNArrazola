@@ -67,14 +67,13 @@ public class Parser {
             throw new NullPointerException("El directorio no se encontró");
         }
 
-        System.out.println("--- Inicio del listado ---");
         for (File file : files) {
             String name = file.getName().substring(0, file.getName().indexOf("."));
             if (name.contains("aux"))
                 continue;
             System.out.println("* " + name);
         }
-        return "--- Fin del listado ---";
+        return "Listado éxitoso";
     }
 
     /**

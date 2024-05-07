@@ -12,7 +12,6 @@ import java.io.InputStreamReader;
  * Matrícula: 2230023
  * */
 public class App {
-    private final BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
     public static void main(String[] args) {
         // Initial validations for the entire work of the program
@@ -33,24 +32,7 @@ public class App {
         // Here the user is gonna insert the queries
         do {
             try{
-                String query = "";
-                do {
-                    if(query.isEmpty())
-                        System.out.println("Ingresa la query (ingresa 'x' si ya no hay mas ENTER): ");
-
-                    String creatingQuery = Utilities.readQuery(bf).trim();
-
-                    if (creatingQuery.equals("X")){
-                        System.out.println(Parser.parseQuery(query));
-                        query = "";
-                    }
-                    else {
-                        if (!query.isEmpty()) {
-                            query += " ";
-                        }
-                        query += creatingQuery;
-                    }
-                }while (runFlag);
+                System.out.println(Parser.parseQuery(Utilities.readBuffer()));
             } catch (Exception e){
                 System.out.println(e.getMessage());
             }

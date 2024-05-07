@@ -2,6 +2,7 @@ package edu.upvictoria.fpoo;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,6 +13,7 @@ import java.util.Set;
 public class Utilities {
     private static Set<String> reservedWords = new HashSet<String>();
     private static Set<String> types = new HashSet<String>();
+    private static final BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
     /**
      * General function to read queries
@@ -63,5 +65,25 @@ public class Utilities {
     public static boolean hasValidChars(String str){
         return !(str.contains(".")|| str.contains("/")||
                 str.contains("|")||str.contains("&"));
+    }
+
+    public static String readBuffer(){
+        String query = "";
+        do {
+            if(query.isEmpty())
+                System.out.println("Ingresa la query (ingresa 'x' si ya no hay mas ENTER): ");
+
+            String creatingQuery = Utilities.readQuery(bf).trim();
+
+            if (creatingQuery.equals("X")){
+                return query;
+            }
+            else {
+                if (!query.isEmpty()) {
+                    query += " ";
+                }
+                query += creatingQuery;
+            }
+        }while (true);
     }
 }
