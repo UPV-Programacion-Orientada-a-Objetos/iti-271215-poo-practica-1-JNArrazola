@@ -1,6 +1,7 @@
 package edu.upvictoria.fpoo;
 
 import java.io.*;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IllegalFormatCodePointException;
@@ -32,7 +33,7 @@ public class Parser {
         } else if (brokeStr[0].equalsIgnoreCase("SELECT")) { // TODO: Select
             System.out.println("this is a select");
         } else if (brokeStr[0].equalsIgnoreCase("INSERT") && brokeStr[1].equalsIgnoreCase("INTO")) { // TODO: Insert into
-            insertInto(query);
+            return (insertInto(query));
         } else if (brokeStr[0].equalsIgnoreCase("CREATE") && brokeStr[1].equalsIgnoreCase("TABLE")) { // TODO: Create table
             return createTable(query);
         } else if (brokeStr[0].equalsIgnoreCase("SHOW") && brokeStr[1].equalsIgnoreCase("TABLES")) { // Show table WORKING
@@ -304,11 +305,9 @@ public class Parser {
         return "No se encontró la tabla";
     }
 
-    public static void insertInto(String query) throws Exception {
-        if (FileManagement.getDatabasePath() == null) {
-            System.out.println("No hay ninguna base de datos seleccionada");
-            return;
-        }
+    public static String insertInto(String query) throws Exception {
+        if (FileManagement.getDatabasePath() == null)
+            throw new IOException("No hay ninguna base de datos seleccionada");
 
         String[] parts = query.split("\\s+(?=\\([^)]*\\))|\\s+(?![^(]*\\))");
 
@@ -352,19 +351,6 @@ public class Parser {
 
         String[] headerBrk = header.split(",");
 
-       /* for (int i = 0; i < headerBrk.length; i++) {
-            boolean f = false;
-            for (int j = 0; j < colBrk.length; j++) {
-                if(colBrk[j].equals(headerBrk[i])){
-                    f = true;
-                    break;
-                }
-            }
-
-            if(!f)
-                throw new RuntimeException("Nombre de columna no encontrado");
-        }*/
-
         if(header.isEmpty())
             throw new RuntimeException("Ocurrió un error al leer la base de datos");
 
@@ -386,22 +372,79 @@ public class Parser {
 
         String[] headerBrkValues = headerBuilder.split(",");
 
-        for (int i = 0; i < headerBrkValues.length; i++) {
-            for (int j = 0; j < types.size(); j++) {
-                
-            }
+        // types es el tipo de cada uno de los valores de la columna
+        // headerBrkValues son los valores de las columnas
+        // headerBrk son los nombres de la columna
+
+
+        for (int i = 0; i < headerBrkValues.length; i++)
+            for(TypeBuilder type : types)
+                if(type.getName().equalsIgnoreCase(headerBrk[i])) {
+                    if(type.isPrimaryKey())
+                        verifyUniqueness(type.getName(), name, headerBrkValues[i]);
+
+
+                    checkType(type, headerBrkValues[i]);
+                }
+
+        String stringToWrite = "";
+        for (int i = 0; i < headerBrkValues.length; i++)
+            stringToWrite+=headerBrkValues[i]+",";
+        stringToWrite = stringToWrite.substring(0, stringToWrite.length() - 1);
+
+        try(BufferedWriter bf = new BufferedWriter(new FileWriter(FileManagement.getDatabasePath() +  name +".csv", true))){
+            bf.write(stringToWrite);
+            bf.newLine();
+        } catch (IOException e){
+            throw new IOException("No se pudo abrir el archivo");
         }
+
+        return "Registro éxitoso";
+    }
+
+    public static boolean verifyUniqueness(String colName, String tableName, String value) throws Exception {
+        try(BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))){
+            String line = br.readLine();
+
+            int index = 0;
+
+            String[] lnBreak = line.split(",");
+            for(int i = 0; i < lnBreak.length; i++){
+                if(lnBreak[i].equalsIgnoreCase(colName)){
+                    index = i;
+                    break;
+                }
+            }
+
+            while ((line = br.readLine()) != null){
+                String[] brkLine = line.split(",");
+
+                if(brkLine[index].equalsIgnoreCase(value))
+                    throw new IllegalArgumentException("PK repetida");
+
+            }
+
+
+        } catch (NumberFormatException e){
+            throw new NumberFormatException("La pk se repite");
+        }
+        return true;
     }
 
     public static boolean checkType(TypeBuilder T, String value) throws Exception {
+        if(value.equalsIgnoreCase("null")&&T.getCanBeNull())
+            return true;
+        else if(value.equalsIgnoreCase("null")&&!T.getCanBeNull())
+            throw new RuntimeException("Hay valores nulos que no deberían de serlo");
+
         switch (T.getDataType()){
             case "int":
                 try {
                     Integer p = Integer.parseInt(value);
-                    return true;
                 } catch (NumberFormatException e){
                     throw new NumberFormatException("Tipo de dato incorrecto");
                 }
+                return true;
             case "float":
                 try{
                     Float p = Float.parseFloat(value);
@@ -410,7 +453,6 @@ public class Parser {
                 }
                 if(T.getLength()!=-1&&value.length() - 1 - value.indexOf(".") > T.getLength())
                     throw new NumberFormatException("Precisión equivocada");
-
                 return true;
 
             case "double":
@@ -419,7 +461,7 @@ public class Parser {
                 } catch (NumberFormatException e){
                     throw new NumberFormatException("Tipo de dato incorrecto");
                 }
-                if(T.getLength()!=-1&&value.length() - 1 - value.indexOf(".") > T.getLength())
+                if(T.getLength()!=-1&&value.contains(".")&&value.length() - 1 - value.indexOf(".") > T.getLength())
                     throw new NumberFormatException("Precisión equivocada");
                 return true;
             case "varchar":
