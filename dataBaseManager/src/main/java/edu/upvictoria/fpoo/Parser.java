@@ -1,13 +1,8 @@
 package edu.upvictoria.fpoo;
 
 import java.io.*;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.IllegalFormatCodePointException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.DataFormatException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Function that parses the query to be able to distinguish between different types of them
@@ -505,9 +500,6 @@ public class Parser {
             throw new FileNotFoundException("No se encontró la tabla");
 
         String condiciones = "";
-        for (int i = 0; i < words.size(); i++)
-            System.out.println(words.get(i));
-
 
         if (query.contains("WHERE".toUpperCase())) {
             try {
@@ -519,86 +511,132 @@ public class Parser {
             for (int i = 5; i < words.size(); i++)
                 condiciones += words.get(i);
 
+            manageWhere(condiciones, tableName);
 
-            condiciones = condiciones.replace(">=", "tempOne");
-            condiciones = condiciones.replace("<=", "tempTwo");
-
-            condiciones = condiciones.replace("AND", "&&");
-            condiciones = condiciones.replace("and", "&&");
-            condiciones = condiciones.replace("OR", "||");
-            condiciones = condiciones.replace("or", "||");
-            condiciones = condiciones.replace("<>", "!=");
-            condiciones = condiciones.replace("'", "\"");
-            condiciones = condiciones.replace("=", ".equals(");
-            condiciones = condiciones.replace("tempOne", ">=");
-            condiciones = condiciones.replace("tempTwo", "<=");
-
-
-            System.out.println();
-            try (BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
-                String line = br.readLine();
-                String[] lineArr = line.split(",");
-
-                for (int i = 0; i < lineArr.length; i++) {
-                    if (condiciones.contains(lineArr[i]))
-                        condiciones = condiciones.replace(lineArr[i], "String.valueOf(lineArr[" + i + "])");
-                }
-            } catch (IOException e) {
-                throw new IOException("No se pudo abrir el archivo");
-            }
-
-            String closeParenthesis = "";
-            boolean flag = false;
-
-            System.out.println(condiciones);
-            for (int i = 0; i < condiciones.length() - 1; i++) {
-                if (condiciones.charAt(i) == '.' && condiciones.charAt(i + 1) == 'e')
-                    flag = true;
-
-                if (((condiciones.charAt(i) == '&' || condiciones.charAt(i) == '|' || condiciones.charAt(i) == '!') && flag || condiciones.charAt(i) == '>' || condiciones.charAt(i) == '<') && flag) {
-                    closeParenthesis += ")";
-                    flag = false;
-                }
-                closeParenthesis += condiciones.charAt(i);
-            }
-
-            if (flag) closeParenthesis += ')';
-            System.out.println(closeParenthesis);
-
-            String finalString = "";
-
-            boolean fl = false;
-            for (int i = 0; i < closeParenthesis.length(); i++) {
-                if (Character.isDigit(closeParenthesis.charAt(i)) && !fl && closeParenthesis.charAt(i-1)!='[') {
-                    finalString += "String.valueOf(";
-                    while (i < closeParenthesis.length() && (Character.isDigit(closeParenthesis.charAt(i))||closeParenthesis.charAt(i) == '.')) {
-                        finalString += closeParenthesis.charAt(i);
-                        i++;
-                    }
-                    finalString += ")";
-                    System.out.println(finalString);
-                }
-
-                if(i < closeParenthesis.length())
-                    finalString+=closeParenthesis.charAt(i);
-
-
-                if (closeParenthesis.charAt(i) == '"') {
-                    if(fl)
-                        fl = false;
-                    else
-                        fl = true;
-                }
-
-            }
-            if(!fl)finalString+=")";
-            System.out.println(finalString);
-
-            if((String.valueOf(lineArr[0]).equals("pedro")&&String.valueOf(lineArr[1]).equals(String.valueOf(1.60)))){
-
-            }
         }
         return "Select realizado con éxito";
+    }
+
+    public static void manageWhere(String condiciones, String tableName) throws  Exception {
+        condiciones = condiciones.replace(">=", "tempOne");
+        condiciones = condiciones.replace("<=", "tempTwo");
+
+        condiciones = condiciones.replace("AND", "&&");
+        condiciones = condiciones.replace("and", "&&");
+        condiciones = condiciones.replace("OR", "||");
+        condiciones = condiciones.replace("or", "||");
+        condiciones = condiciones.replace("<>", "!=");
+        condiciones = condiciones.replace("'", "\"");
+        condiciones = condiciones.replace("=", "==");
+        condiciones = condiciones.replace("tempTwo", "<=");
+        condiciones = condiciones.replace("tempOne", ">=");
+
+
+        ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
+
+        for (int i = 0; i < condiciones.length(); i++) {
+            for (int j = 0; j < tp.size(); j++) {
+                if (condiciones.contains(tp.get(j).getName())) {
+                    TypeBuilder t = tp.get(j);
+
+                    switch (tp.get(j).getDataType()) {
+                        case "int":
+                            condiciones = condiciones.replace(t.getName(), "Integer.parseInt(String.valueOf(arrBrk["+j+"]))");
+                            break;
+                        case "float":
+                            condiciones = condiciones.replace(t.getName(), "Float.parseFloat(String.valueOf(arrBrk["+j+"]))");
+                            break;
+                        case "double":
+                            condiciones = condiciones.replace(t.getName(), "Double.parseDouble(String.valueOf(arrBrk["+j+"]))");
+                            break;
+                    }
+                }
+            }
+        }
+
+        String tablaTemp = new File("").getAbsolutePath() + "/dataBaseManager/src/main/java/edu/upvictoria/fpoo/tablaTemp.java";
+        String javacc = new File("").getAbsolutePath() + "/dataBaseManager/src/main/java/edu/upvictoria/fpoo/";
+        String archivoTemp = new File("").getAbsolutePath() + "/dataBaseManager/src/main/java/edu/upvictoria/fpoo/database.txt";
+        String archivoNombre = new File("").getAbsolutePath() + "/dataBaseManager/src/main/java/edu/upvictoria/fpoo/nombre.txt";
+
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter(archivoTemp))){
+            bw.write(FileManagement.getDatabasePath());
+        } catch(IOException e){
+            throw new Exception("No se pudo crear el archivo");
+        }
+
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter(archivoNombre))){
+            bw.write(tableName);
+        } catch(IOException e){
+            throw new Exception("No se pudo crear el archivo");
+        }
+
+        /**
+         * Write file
+         * */
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter(tablaTemp))){
+            bw.write("package edu.upvictoria.fpoo;\n" +
+                    "\n" +
+                    "import java.io.*;\n" +
+                    "import java.util.ArrayList;\n" +
+                    "\n" +
+                    "public class tablaTemp {\n" +
+                    "    public static void main(String[] args) {\n" +
+                    "        String database = \"\";\n" +
+                    "        String nombre = \"\";\n" +
+                    "\n" +
+                    "        String archivoNombre = new File(\"\").getAbsolutePath() + \"/dataBaseManager/src/main/java/edu/upvictoria/fpoo/nombre.txt\";\n" +
+                    "        String archivoTemp = new File(\"\").getAbsolutePath() + \"/dataBaseManager/src/main/java/edu/upvictoria/fpoo/database.txt\";\n" +
+                    "\n" +
+                    "        try (BufferedReader bf = new BufferedReader(new FileReader(archivoNombre))) {\n" +
+                    "            nombre = bf.readLine();\n" +
+                    "        } catch (IOException e){};\n" +
+                    "\n" +
+                    "        try(BufferedReader bw = new BufferedReader(new FileReader(archivoTemp))){\n" +
+                    "            database = bw.readLine();\n" +
+                    "        }catch (IOException e){};\n" +
+                    "\n" +
+                    "        System.out.println(nombre);\n" +
+                    "        System.out.println(database);\n" +
+                    "\n" +
+                    "        // arrBrk\n" +
+                    "        ArrayList<String> tabla = new ArrayList<>();\n" +
+                    "        try(BufferedReader br = new BufferedReader(new FileReader(database + nombre + \".csv\"))){\n" +
+                    "            String line = br.readLine();\n" +
+                    "            tabla.add(line);\n" +
+                    "\n" +
+                    "            // condicional\n" +
+                    "            while((line = br.readLine()) != null){\n" +
+                    "               String[] arrBrk = line.split(\",\");\n" +
+                    "                if("+condiciones+")\n" +
+                    "                   tabla.add(line);\n" +
+                    "            }\n" +
+                    "        }catch (Exception e){};\n" +
+                    "\n" +
+                    "        String file = new File(\"\").getAbsoluteFile() + \"/\";\n" +
+                    "\n" +
+                    "        try(BufferedWriter bw = new BufferedWriter(new FileWriter(new File(\"\").getAbsolutePath()+\"/\" + nombre + \"doubleSelect.csv\"))){\n" +
+                    "            for(String s : tabla){\n" +
+                    "                bw.write(s); bw.newLine();};\n" +
+                    "        } catch (Exception e){};\n" +
+                    "    }\n" +
+                    "}");
+        } catch(IOException e){
+            throw new Exception("No se pudo crear el archivo");
+        }
+
+        try {
+            Process processOne = Runtime.getRuntime().exec("javac " + tablaTemp);
+            processOne.waitFor(1000, TimeUnit.SECONDS);
+            Process processTwo = Runtime.getRuntime().exec("java -classpath dataBaseManager/src/main/java/ edu.upvictoria.fpoo.tablaTemp");
+            processTwo.waitFor(1000, TimeUnit.SECONDS);
+        } catch (Exception e){
+            throw new Exception("No se encontró el archivo");
+        }
+
+        (new File(tablaTemp)).delete();
+        (new File(archivoNombre)).delete();
+        (new File(archivoTemp)).delete();
     }
 
 
