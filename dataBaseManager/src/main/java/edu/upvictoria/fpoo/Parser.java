@@ -563,10 +563,76 @@ public class Parser {
         if(query.contains("WHERE")||query.contains("where")){
             manageWhere(condicionales, tableName);
             containsWhere = true;
+        } 
+
+        String path = ((containsWhere) ? (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv" : 
+        FileManagement.getDatabasePath() + tableName + ".csv");
+
+        if(header.equals("*")){
+            try(BufferedReader br = new BufferedReader(new FileReader(path))){
+                String line = br.readLine();
+                String[] headerBrk = line.split(",");
+    
+                for (int i = 0; i < headerBrk.length; i++) {
+                    if(alias.containsKey(headerBrk[i]))
+                        System.out.print(alias.get(headerBrk[i]) + " ");
+                    else
+                        System.out.print(headerBrk[i] + " ");
+                }
+                System.out.println();
+    
+                while((line = br.readLine()) != null){
+                    String[] arrBrk = line.split(",");
+                    for (int i = 0; i < arrBrk.length; i++) {
+                        System.out.print(arrBrk[i] + " ");
+                    }
+                    System.out.println();
+                }
+            } catch (IOException e){
+                throw new IOException("Parámetros del select incorrectos");
+            }
+        } else {
+            String[] headerBrk = header.split(",");
+            try(BufferedReader br = new BufferedReader(new FileReader(path))){
+                String line = br.readLine();
+                String[] headerFile = line.split(",");
+                ArrayList<Integer> indexes = new ArrayList<>();
+    
+                for (int i = 0; i < headerBrk.length; i++) {
+                    for (int j = 0; j < headerFile.length; j++) {
+                        if(headerBrk[i].equals(headerFile[j])){
+                            indexes.add(j);
+                            break;
+                        }
+                    }
+                }
+    
+                for (int i = 0; i < headerBrk.length; i++) {
+                    if(alias.containsKey(headerBrk[i]))
+                        System.out.print(alias.get(headerBrk[i]) + " ");
+                    else
+                        System.out.print(headerBrk[i] + " ");
+                }
+                System.out.println();
+    
+                while((line = br.readLine()) != null){
+                    String[] arrBrk = line.split(",");
+                    for (int i = 0; i < indexes.size(); i++) {
+                        System.out.print(arrBrk[indexes.get(i)] + " ");
+                    }
+                    System.out.println();
+                }
+            } catch (IOException e){
+                throw new IOException("Parámetros del select incorrectos");
+            }
         }
 
+        
 
-        return "";
+        if(containsWhere)
+            Utilities.deleteFilesFromWhere();
+
+        return "Select realizado con éxito";
     }
 
     public static void manageWhere(String condiciones, String tableName) throws  Exception {
@@ -587,7 +653,7 @@ public class Parser {
         String regexOne = "==\\\"([^\\\"]*)\\\"";
         Pattern pattern = Pattern.compile(regexOne);
         Matcher matcher = pattern.matcher(condiciones);
-        condiciones = matcher.replaceAll(".equals(\"$1\")");
+        condiciones = matcher.replaceAll(".equals(\"\'$1\'\")");
 
         condiciones = condiciones.replace(">=", "tempOne");
         condiciones = condiciones.replace("<=", "tempTwo");
@@ -630,7 +696,6 @@ public class Parser {
         } catch (IOException e){
             throw new IOException("No se pudo abrir el archivo");
         }
-
         // Hasta acá está full trabajada la condición
         // Integer.parseInt(String.valueOf(arrBrk[0]))==10&&String.valueOf(arrBrk[1]).equals("miguel")
         // System.out.println(condiciones);
@@ -641,7 +706,7 @@ public class Parser {
         String tableDir = FileManagement.getDatabasePath() + tableName + ".csv";
 
         try(BufferedWriter bf = new BufferedWriter(new FileWriter(temporalAuxInfoPath))){
-            bf.write(condiciones + "," + tableDir);
+            bf.write(tableDir);
         } catch (IOException e){
             throw new IOException("No se pudo abrir el archivo");
         }
@@ -658,15 +723,11 @@ public class Parser {
                                 "\n" + //
                                 "public class TablaTemp {\n" + //
                                 "    public static void main(String[] args) {\n" + //
-                                "        String condicional = \"\";\n" + //
                                 "        String tableDir = \"\";\n" + //
                                 "\n" + //
                                 "        String temporalAuxInfoPath = (new File(\"\")).getAbsolutePath() + \"/temporalAuxInfo.txt\";\n" + //
                                 "        try(BufferedReader br = new BufferedReader(new FileReader(temporalAuxInfoPath))){\n" + //
-                                "            String line = br.readLine();\n" + //
-                                "            String[] lineBrk = line.split(\",\");\n" + //
-                                "            condicional = lineBrk[0];\n" + //
-                                "            tableDir = lineBrk[1];\n" + //
+                                "            tableDir = br.readLine();\n" + //
                                 "        } catch (Exception e){\n" + //
                                 "            System.out.println(e.getMessage());\n" + //
                                 "        }\n" + //
@@ -677,7 +738,7 @@ public class Parser {
                                 "            tabla.add(line);\n" + //
                                 "            while ((line = br.readLine()) != null) {\n" + //
                                 "                String[] arrBrk = line.split(\",\"); \n" + //
-                                "                if("+ condiciones + ")\n" + //
+                                "                if("+condiciones+")\n" + //
                                 "                tabla.add(line);\n" + //
                                 "            }\n" + //
                                 "        } catch (Exception e){\n" + //
@@ -698,14 +759,15 @@ public class Parser {
             throw new Exception("No se pudo crear el archivo");
         }
 
-         try {
+        try {
             Process processOne = Runtime.getRuntime().exec("javac " + temporalTableTemp);
-            processOne.waitFor(1000, TimeUnit.SECONDS);
-            Process processTwo = Runtime.getRuntime().exec("java -classpath dataBaseManager/src/main/java/ edu.upvictoria.fpoo.tablaTemp");
-            processTwo.waitFor(1000, TimeUnit.SECONDS);
+            processOne.waitFor(2000, TimeUnit.SECONDS);
+            Process processTwo = Runtime.getRuntime().exec("java -classpath dataBaseManager/src/main/java/ edu.upvictoria.fpoo.TablaTemp");
+            processTwo.waitFor(2000, TimeUnit.SECONDS);
         } catch (Exception e){
             throw new Exception("No se encontró el archivo");
         }
+        Utilities.deleteFilesFromWhere();
     }
 
 

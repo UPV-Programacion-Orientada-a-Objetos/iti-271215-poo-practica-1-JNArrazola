@@ -1,6 +1,7 @@
 package edu.upvictoria.fpoo;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -99,4 +100,9 @@ public class Utilities {
         throw new Exception("No se encontró el tipo");
     }
 
+    public static void deleteFilesFromWhere(){
+        new File((new File("")).getAbsolutePath() + "/temporalAuxInfo.txt").delete();
+        new File("dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.java").delete();
+        new File("dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.class").delete();
+    }
 }
