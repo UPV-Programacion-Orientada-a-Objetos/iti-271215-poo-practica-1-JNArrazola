@@ -34,10 +34,10 @@ public class Parser {
             if (brokeStr[0].equalsIgnoreCase("USE")) {
                 return FileManagement.useDatabase(query, brokeStr);
             } else if (brokeStr[0].equalsIgnoreCase("UPDATE")) { // TODO: Update
-                System.out.println("this is an update");
+                // return update(query);
             } else if (brokeStr[0].equalsIgnoreCase("DELETE") && brokeStr[1].equalsIgnoreCase("FROM")) { // TODO: Delete from
-                System.out.println("this is a delete");
-            } else if (brokeStr[0].equalsIgnoreCase("SELECT")) { // TODO: Select
+                // return deleteFrom(query);
+            } else if (brokeStr[0].equalsIgnoreCase("SELECT")) { 
                 return select(query);
             } else if (brokeStr[0].equalsIgnoreCase("INSERT") && brokeStr[1].equalsIgnoreCase("INTO")) {
                 return (insertInto(query));
@@ -126,6 +126,10 @@ public class Parser {
         }
 
         tableName = tableName.trim();
+
+        if(tableName.equals(""))
+            throw new IllegalArgumentException("Nombre de tabla vacío");
+            
         if (!Utilities.hasValidChars(tableName)) {
             throw new IllegalArgumentException("La entrada no tiene caracteres válidos");
         } else if (!FileManagement.verifyDuplicatesTableName(tableName)) {
@@ -769,6 +773,70 @@ public class Parser {
         }
         Utilities.deleteFilesFromWhere();
     }
+
+    public static String deleteFrom(String query) throws Exception {
+        if(FileManagement.getDatabasePath() == null)
+            throw new FileNotFoundException("No se ha accedido a ninguna base de datos");
+
+        String[] words = query.split(" ");
+
+        if(words.length < 3)
+            throw new IllegalArgumentException("Sintaxis incorrecta");
+
+        String tableName = words[2];
+
+        if(!FileManagement.searchForTable(tableName))
+            throw new IOException("Tabla no encontrada");
+
+        String condicionales = "";
+
+        boolean flag = false;
+        if(query.contains("WHERE")||query.contains("where")){
+            manageWhere(condicionales, tableName);
+            flag = true;
+        }
+        try {
+            for (int i = 3; i < words.length; i++) {
+                if(Utilities.isReservedWord(words[i])) continue;
+                condicionales+=words[i] + " ";
+            }
+        } catch (Exception e) {
+            throw new Exception("Sintaxis incorrecta");
+        }
+
+        if(condicionales.isEmpty()&&!flag)
+            throw new Exception("Sintaxis incorrecta");
+        
+        String path = ((flag) ? (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv" : 
+        FileManagement.getDatabasePath() + tableName + ".csv");
+        
+        if(!flag){
+            String header = "";
+
+            try(BufferedReader br = new BufferedReader(new FileReader(path))){
+                header = br.readLine();
+            } catch (IOException e){
+                throw new IOException("No se pudo abrir el archivo");
+            }
+
+            try(BufferedWriter bw = new BufferedWriter(new FileWriter(path))){
+                bw.write(header);
+                bw.newLine();
+            } catch(IOException e){
+                throw new IOException("No se pudo abrir el archivo");
+            }
+        }
+            
+
+        return "Borrado éxitoso";
+    }
+
+    public static String update(String query) throws Exception{
+        
+
+        return "Update realizado con éxito";
+    }
+    
 
 
     /**

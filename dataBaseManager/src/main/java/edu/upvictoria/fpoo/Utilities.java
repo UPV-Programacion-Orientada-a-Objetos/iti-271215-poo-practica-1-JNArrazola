@@ -47,6 +47,7 @@ public class Utilities {
         reservedWords.add("ORDER");
         reservedWords.add("BY");
         reservedWords.add("WHERE");
+        reservedWords.add("SET");
     }
 
     public static void fillTypes(){
