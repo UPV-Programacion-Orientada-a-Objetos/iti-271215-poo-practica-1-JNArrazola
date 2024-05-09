@@ -37,9 +37,8 @@ public class Parser {
             if (brokeStr[0].equalsIgnoreCase("USE")) {
                 return FileManagement.useDatabase(query, brokeStr);
             } else if (brokeStr[0].equalsIgnoreCase("UPDATE")) { // TODO: Update
-                // return update(query);
+                return update(query);
             } else if (brokeStr[0].equalsIgnoreCase("DELETE") && brokeStr[1].equalsIgnoreCase("FROM")) { // TODO: Delete
-                                                                                                         // from
                 return deleteFrom(query);
             } else if (brokeStr[0].equalsIgnoreCase("SELECT")) {
                 return select(query);
@@ -106,7 +105,7 @@ public class Parser {
         try {
             for (index = 0; index < query.length(); index++) {
                 if (query.charAt(index) == ' ') {
-                    if (wordFormed.equals("TABLE")) {
+                    if (wordFormed.equalsIgnoreCase("TABLE")) {
                         ++index;
                         break;
                     }
@@ -127,8 +126,6 @@ public class Parser {
             }
             tableName += query.charAt(i);
         }
-
-        tableName = tableName.trim();
 
         if (tableName.equals(""))
             throw new IllegalArgumentException("Nombre de tabla vacío");
@@ -568,11 +565,11 @@ public class Parser {
 
             for (int i = 0; i < hdbrk.length; i++) {
                 boolean flag = false;
-                for (int j = 0; j < hdbrk.length; j++) {
+                for (int j = 0; j < tp.size(); j++) {
                     if (tp.get(j).getName().equals(hdbrk[i])) {
                         flag = true;
                         break;
-                    }
+                    } 
                 }
                 if (!flag)
                     throw new IllegalArgumentException("Parámetros desconocidos en el select");
@@ -595,6 +592,11 @@ public class Parser {
         String path = ((containsWhere) ? (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv"
                 : FileManagement.getDatabasePath() + tableName + ".csv");
 
+        if((!new File(path).exists())){
+            Utilities.deleteFilesFromWhere();
+            throw new IllegalArgumentException("WHERE inválido");
+        }
+            
         if (header.equals("*")) {
             try (BufferedReader br = new BufferedReader(new FileReader(path))) {
                 String line = br.readLine();
@@ -691,7 +693,6 @@ public class Parser {
         condiciones = condiciones.replace("tempOne", ">=");
 
         String header = "";
-
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             header = br.readLine();
 
@@ -800,7 +801,6 @@ public class Parser {
         } catch (Exception e) {
             throw new Exception("No se encontró el archivo");
         }
-        Utilities.deleteFilesFromWhere();
     }
 
     public static String deleteFrom(String query) throws Exception {
@@ -864,6 +864,11 @@ public class Parser {
             }
         manageWhere(condicionales, tableName);
 
+        if(!new File(path).exists()){
+            Utilities.deleteFilesFromWhere();
+            throw new IllegalArgumentException("Where invalido");
+        }
+
         HashSet<String> idsAExcluir = new HashSet<String>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
@@ -917,14 +922,240 @@ public class Parser {
             throw new IllegalArgumentException("No hay suficientes parámetros");
 
         String tableName = words[1];
+        if(!words[2].equalsIgnoreCase("SET"))
+            throw new IllegalArgumentException("No hay suficientes parámetros");
 
         if(!FileManagement.searchForTable(tableName))
             throw new FileNotFoundException("No encontré el archivo");
         
         String set = "";
+        System.out.println(tableName);
 
+        int index = 2;
+        for (int i = index; i < words.length; i++) {
+            if(words[i].equalsIgnoreCase("WHERE")) break;
+            if(Utilities.isReservedWord(words[i])) continue;
+            set+=words[i];
+        }
         
+        if(set.equals(""))
+            throw new IllegalArgumentException("Set inválid");
+
+        String[] setBrk = set.split(",");
+
+        for (int i = 0; i < setBrk.length; i++) 
+            setBrk[i] = setBrk[i].trim();
         
+        HashMap<String, String> values = new HashMap<>();
+
+        for (int i = 0; i < setBrk.length; i++) {
+            String[] line = setBrk[i].split("=");
+            
+            if(line.length>2) throw new IllegalArgumentException("Set inválido,");
+
+            if(!values.containsKey(line[0]))
+                values.put(line[0], line[1]);
+            else   
+                throw new IllegalArgumentException("Set inválido");
+        }
+
+        String header = "";
+
+        try(BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))){
+            header = br.readLine();
+        } catch (IOException e){
+            throw new IOException("No se pudo abrir el archivo");
+        }
+        
+        for(String key : values.keySet()){
+            boolean flag = false;
+            for(String h : header.split(",")){
+                if(h.equals(key)){
+                    flag = true;
+                    break;
+                }
+            }
+            if(!flag) throw new IllegalArgumentException("Set inválido");
+        }
+        
+        ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
+        boolean hasPK = false;
+
+        for(String key : values.keySet()){
+            for(TypeBuilder t : tp){
+                if(t.getName().equals(key) && t.isPrimaryKey()){
+                    hasPK = true;
+                    break;
+                }
+            }
+        }
+
+        // now verify data types with the verify type method
+        for(String key : values.keySet()){
+            for(TypeBuilder t : tp){
+                if(t.getName().equals(key)){
+                    checkType(t, values.get(key));
+                }
+            }
+        }
+
+        boolean flag = false;
+
+        if(query.contentEquals("WHERE") || query.contains("where"))
+            flag = true;
+        
+        if(!flag){
+            ArrayList<String> lines = new ArrayList<>();
+            lines.add(header);
+
+            try(BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))){
+                String line = br.readLine();
+                while((line = br.readLine()) != null){
+                    String[] lineBrk = line.split(",");
+                    for(String key : values.keySet()){
+                        for(int i = 0; i < lineBrk.length; i++){
+                            if(header.split(",")[i].equals(key)){
+                                lineBrk[i] = values.get(key);
+                                break;
+                            }
+                        }
+                    }
+                    String newLine = "";
+                    for(int i = 0; i < lineBrk.length; i++)
+                        newLine += lineBrk[i] + ",";
+                    newLine = newLine.substring(0, newLine.length() - 1);
+                    lines.add(newLine);
+                }
+            } catch (IOException e){
+                throw new IOException("No se pudo abrir el archivo");
+            }
+
+            if(lines.size() == 1)
+                throw new IllegalArgumentException("No se encontraron registros");
+
+            ArrayList<TypeBuilder> types = FileManagement.decompressInfo(tableName);
+
+            int indexPK = 0;
+            for(int i = 0; i < types.size(); i++)
+                if(types.get(i).isPrimaryKey()){
+                    indexPK = i;
+                    break;
+                }
+
+            HashSet<String> ids = new HashSet<>();
+
+            for(int i = 1; i < lines.size(); i++){
+                String[] lineBrk = lines.get(i).split(",");
+                if(ids.contains(lineBrk[indexPK]))
+                    throw new IllegalArgumentException("PK repetida");
+                ids.add(lineBrk[indexPK]);
+            }
+
+            try(BufferedWriter bw = new BufferedWriter(new FileWriter(FileManagement.getDatabasePath() + tableName + ".csv"))){
+                for(String line : lines){
+                    bw.write(line);
+                    bw.newLine();
+                }
+            } catch (IOException e){
+                throw new IOException("No se pudo abrir el archivo");
+            } 
+            return "Update realizado con éxito";
+        }
+
+        String condicionales = "";
+
+        for (int i = 0; i < words.length; i++) {
+            if(words[i].equalsIgnoreCase("WHERE")&&i+1<words.length) {
+                for (int j = i + 1; j < words.length; j++) {
+                    if(Utilities.isReservedWord(words[j])) continue;
+                    condicionales += words[j];
+                }
+            }
+        }
+
+        manageWhere(condicionales, tableName);
+
+        if(!new File((new File("").getAbsolutePath()) + "/temporalAuxInfo.csv").exists()){
+            Utilities.deleteFilesFromWhere();
+            throw new IllegalArgumentException("Where inválido");
+        }
+
+        HashSet<String> ids = new HashSet<>();
+
+        try(BufferedReader br = new BufferedReader(new FileReader((new File("").getAbsolutePath()) + "/temporalAuxInfo.csv"))){
+            String line;
+            while((line = br.readLine()) != null){
+                String[] lineBrk = line.split(",");
+                ids.add(lineBrk[0]);
+            }
+        } catch (IOException e){
+            throw new IOException("No se pudo abrir el archivo");
+        }
+
+        ArrayList<String> lines = new ArrayList<>();
+
+        try(BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))){
+            // i need to save all the lines, the not modified and modified ones in lines
+            // because then we are going to verify the pk's
+
+            String line = br.readLine();
+            lines.add(line);
+
+            while((line = br.readLine()) != null){
+                String[] lineBrk = line.split(",");
+                if(ids.contains(lineBrk[0])){
+                    for(String key : values.keySet()){
+                        for(int i = 0; i < lineBrk.length; i++){
+                            if(header.split(",")[i].equals(key)){
+                                lineBrk[i] = values.get(key);
+                                break;
+                            }
+                        }
+                    }
+                }
+                String newLine = "";
+                for(int i = 0; i < lineBrk.length; i++)
+                    newLine += lineBrk[i] + ",";
+                newLine = newLine.substring(0, newLine.length() - 1);
+                lines.add(newLine);
+            }
+
+
+        } catch (IOException e){
+            throw new IOException("No se pudo abrir el archivo");
+        }
+
+        ArrayList<TypeBuilder> types = FileManagement.decompressInfo(tableName);
+
+        int indexPK = 0;
+        for(int i = 0; i < types.size(); i++)
+            if(types.get(i).isPrimaryKey()){
+                indexPK = i;
+                break;
+            }
+
+        HashSet<String> idsAExcluir = new HashSet<>();
+
+        for(int i = 1; i < lines.size(); i++){
+            String[] lineBrk = lines.get(i).split(",");
+            if(idsAExcluir.contains(lineBrk[indexPK])){
+                Utilities.deleteFilesFromWhere();
+                throw new IllegalArgumentException("PK repetida");
+            }
+            idsAExcluir.add(lineBrk[indexPK]);
+        }
+
+
+        //try(BufferedWriter bw = new BufferedWriter(new FileWriter(FileManagement.getDatabasePath() + tableName + ".csv"))){
+        //    for(String line : lines){
+        //        bw.write(line);
+        //        bw.newLine();
+        //    }
+        //} catch (IOException e){
+        //    throw new IOException("No se pudo abrir el archivo");
+        //}
+
+        Utilities.deleteFilesFromWhere();
         return "Update realizado con éxito";
     }
 
