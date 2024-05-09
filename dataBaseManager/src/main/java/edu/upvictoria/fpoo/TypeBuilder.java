@@ -15,7 +15,7 @@ public class TypeBuilder {
     TypeBuilder(String name, boolean canBeNull, String dataType, int length, boolean primaryKey) {
         this.name = name;
         this.canBeNull = canBeNull;
-        this.dataType = dataType;
+        this.dataType = dataType.toLowerCase();
         this.length = length;
         this.primaryKey = primaryKey;
     }

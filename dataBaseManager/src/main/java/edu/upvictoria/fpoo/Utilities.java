@@ -3,6 +3,7 @@ package edu.upvictoria.fpoo;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -44,6 +45,7 @@ public class Utilities {
         reservedWords.add("USE");
         reservedWords.add("ORDER");
         reservedWords.add("BY");
+        reservedWords.add("WHERE");
     }
 
     public static void fillTypes(){
@@ -87,4 +89,14 @@ public class Utilities {
             }
         }while (true);
     }
+
+    public static TypeBuilder findType(String name, ArrayList<TypeBuilder> array) throws Exception{
+        for(TypeBuilder type : array)
+            if(type.getName().equals(name))
+                return type;
+        
+
+        throw new Exception("No se encontró el tipo");
+    }
+
 }

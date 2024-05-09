@@ -2,7 +2,6 @@ package edu.upvictoria.fpoo;
 
 import java.io.*;
 import java.nio.file.FileSystemException;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 
 /**
