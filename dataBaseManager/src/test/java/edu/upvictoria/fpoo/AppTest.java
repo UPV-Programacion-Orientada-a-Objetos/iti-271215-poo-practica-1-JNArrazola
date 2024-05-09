@@ -10,15 +10,18 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-
 /**
  * Unit test for simple App.
  */
 public class AppTest
-        extends TestCase {
+
+extends TestCase {
     public AppTest(String testName) {
         super(testName);
     }
+
+    private final String testTable = new File("").getAbsolutePath() + "/test/";
+    private final String tableName = "testTable";
 
     public void testApp() {
         assertTrue(true);
@@ -148,20 +151,7 @@ public class AppTest
             assertFalse(Parser.parenthesisCheck(s));
     }
 
-    @Test
-    public void crearTabla() {
-        // Query
-        String query = "CREATE TABLE EMP (ID int not null primary key, name varchar not null);";
-
-        // Path
-        String path = (new File("").getAbsolutePath() + "/");
-
-        String call = "";
-        try {
-            call = Parser.parseQuery(query);
-        } catch (Exception e) {
-        }
-    }
+    
 
 
 }

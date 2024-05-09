@@ -370,6 +370,21 @@ public class Parser {
 
         String[] headerBrk = header.split(",");
 
+        for (int i = 0; i < colBrk.length; i++) 
+            colBrk[i] = colBrk[i].trim();
+
+        for (int i = 0; i < colBrk.length; i++) {
+            boolean flag = false; 
+            for (int j = 0; j < types.size(); j++) {
+                if(colBrk[i].equals(types.get(j).getName())) {
+                    flag = true;
+                    break;
+                }
+            }
+
+            if(!flag) throw new IllegalArgumentException("Valores de insert into inválidos");
+        }
+
         if (header.isEmpty())
             throw new RuntimeException("Ocurrió un error al leer la base de datos");
 
@@ -610,7 +625,7 @@ public class Parser {
                 : FileManagement.getDatabasePath() + tableName + ".csv");
 
         if ((!new File(path).exists())) {
-            Utilities.deleteFilesFromWhere();
+            // Utilities.deleteFilesFromWhere();
             throw new IllegalArgumentException("WHERE inválido");
         }
 
@@ -690,18 +705,18 @@ public class Parser {
         }
         condiciones = temp;
 
-        // Regex para cambiar == a .equalsTo en strings
+        condiciones = condiciones.replace(">=", "tempOne");
+        condiciones = condiciones.replace("<=", "tempTwo");
         condiciones = condiciones.replace("'", "\"");
         condiciones = condiciones.replace("=", "==");
         condiciones = condiciones.replace("<>", "!=");
-
+        
+        // Regex para cambiar == a .equalsTo en strings
         String regexOne = "==\\\"([^\\\"]*)\\\"";
         Pattern pattern = Pattern.compile(regexOne);
         Matcher matcher = pattern.matcher(condiciones);
         condiciones = matcher.replaceAll(".equals(\"\'$1\'\")");
-
-        condiciones = condiciones.replace(">=", "tempOne");
-        condiciones = condiciones.replace("<=", "tempTwo");
+        
         condiciones = condiciones.replace("AND", "&&");
         condiciones = condiciones.replace("and", "&&");
         condiciones = condiciones.replace("OR", "||");
@@ -727,11 +742,11 @@ public class Parser {
                                 break;
                             case "float":
                                 condiciones = condiciones.replace(t.getName(),
-                                        "Math.round(Float.parseFloat(arrBrk[" + j + "]) * 10000.0) / 10000.0");
+                                        "(Math.round(Float.parseFloat(arrBrk[" + j + "]) * 10000.0) / 10000.0)");
                                 break;
                             case "double":
                                 condiciones = condiciones.replace(t.getName(),
-                                        "Math.round(Double.parseDouble(String.valueOf(arrBrk[" + j + "])");
+                                        "(Math.round(Double.parseDouble(String.valueOf(arrBrk[" + j + "]))");
                                 break;
                             case "varchar":
                                 condiciones = condiciones.replace(t.getName(), "String.valueOf(arrBrk[" + j + "])");
@@ -866,7 +881,7 @@ public class Parser {
             } catch (FileNotFoundException e) {
                 throw new FileNotFoundException("No se encontró el archivo");
             }
-            return "";
+            return "Update realizado con éxito";
         }
 
         String path = (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv";
@@ -925,7 +940,7 @@ public class Parser {
         }
 
         Utilities.deleteFilesFromWhere();
-        return "";
+        return "Update realizado con éxito";
     }
 
     public static String update(String query) throws Exception {
@@ -1012,7 +1027,6 @@ public class Parser {
             }
         }
 
-        // now verify data types with the verify type method
         for (String key : values.keySet()) {
             for (TypeBuilder t : tp) {
                 if (t.getName().equals(key)) {

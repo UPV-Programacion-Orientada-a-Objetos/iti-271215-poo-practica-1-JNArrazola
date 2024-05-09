@@ -1,0 +1,4 @@
+id,false,int,-1,true
+name,false,varchar,20,false
+money,true,float,-1,false
+height,true,float,-1,false

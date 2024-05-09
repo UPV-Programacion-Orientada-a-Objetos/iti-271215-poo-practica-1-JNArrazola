@@ -34,7 +34,6 @@ public class App {
                 System.out.println(e.getMessage());
             }
         }while (runFlag);
-
     }
 
 }
