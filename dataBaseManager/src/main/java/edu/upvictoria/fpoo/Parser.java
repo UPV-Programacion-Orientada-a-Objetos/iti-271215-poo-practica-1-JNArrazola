@@ -16,7 +16,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Function that parses the query to be able to distinguish between different types of them
+ * Function that parses the query to be able to distinguish between different
+ * types of them
  *
  * @author Joshua Arrazola
  */
@@ -24,21 +25,23 @@ public class Parser {
     private static final BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
     /**
-     * Function to parse the query, and start dividing it to see what type it is and filter if there's a typo
+     * Function to parse the query, and start dividing it to see what type it is and
+     * filter if there's a typo
      */
     public static String parseQuery(String query) throws Exception {
         String brokeStr[] = query.split(" ");
 
         try {
             if (brokeStr.length <= 1 || !parenthesisCheck(query))
-            throw new RuntimeException("Query incompleta");
+                throw new RuntimeException("Query incompleta");
             if (brokeStr[0].equalsIgnoreCase("USE")) {
                 return FileManagement.useDatabase(query, brokeStr);
             } else if (brokeStr[0].equalsIgnoreCase("UPDATE")) { // TODO: Update
                 // return update(query);
-            } else if (brokeStr[0].equalsIgnoreCase("DELETE") && brokeStr[1].equalsIgnoreCase("FROM")) { // TODO: Delete from
+            } else if (brokeStr[0].equalsIgnoreCase("DELETE") && brokeStr[1].equalsIgnoreCase("FROM")) { // TODO: Delete
+                                                                                                         // from
                 return deleteFrom(query);
-            } else if (brokeStr[0].equalsIgnoreCase("SELECT")) { 
+            } else if (brokeStr[0].equalsIgnoreCase("SELECT")) {
                 return select(query);
             } else if (brokeStr[0].equalsIgnoreCase("INSERT") && brokeStr[1].equalsIgnoreCase("INTO")) {
                 return (insertInto(query));
@@ -52,7 +55,6 @@ public class Parser {
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
-        
 
         return "No se reconoció la sentencia";
     }
@@ -128,9 +130,9 @@ public class Parser {
 
         tableName = tableName.trim();
 
-        if(tableName.equals(""))
+        if (tableName.equals(""))
             throw new IllegalArgumentException("Nombre de tabla vacío");
-            
+
         if (!Utilities.hasValidChars(tableName)) {
             throw new IllegalArgumentException("La entrada no tiene caracteres válidos");
         } else if (!FileManagement.verifyDuplicatesTableName(tableName)) {
@@ -150,7 +152,6 @@ public class Parser {
         if (columnsStr.isEmpty())
             throw new IllegalArgumentException("Faltan argumentos (columnas)");
 
-
         columnsStr = columnsStr.trim();
         ArrayList<String> parseCreateRequest = new ArrayList<String>();
 
@@ -168,12 +169,13 @@ public class Parser {
         }
 
         String midProcessing = "";
-        for (String S : parseCreateRequest) midProcessing += (S + " ");
-
+        for (String S : parseCreateRequest)
+            midProcessing += (S + " ");
 
         String[] brkQuery = midProcessing.split(",");
 
-        for (int i = 0; i < brkQuery.length; i++) brkQuery[i] = brkQuery[i].trim();
+        for (int i = 0; i < brkQuery.length; i++)
+            brkQuery[i] = brkQuery[i].trim();
 
         ArrayList<TypeBuilder> types = new ArrayList<TypeBuilder>();
         boolean primaryKey = false;
@@ -228,13 +230,13 @@ public class Parser {
             if (Utilities.isReservedWord(name) || Utilities.isType(name))
                 throw new IllegalArgumentException("El nombre no puede tener palabras reservadas");
 
-
             if (!Utilities.isType(type))
                 throw new IllegalArgumentException("El nombre no puede ser un tipo de dato");
 
             try {
                 Integer parse = Integer.parseInt(length);
-                if (parse != -1 && parse <= 0) throw new NumberFormatException("Longitud inválida");
+                if (parse != -1 && parse <= 0)
+                    throw new NumberFormatException("Longitud inválida");
             } catch (NumberFormatException e) {
                 throw new NumberFormatException("Argumento de longitud incorrecto");
             }
@@ -339,10 +341,10 @@ public class Parser {
             throw new FileNotFoundException("No se encontró el archivo");
 
         String columns = parts[3];
-            
+
         if (!parts[4].equalsIgnoreCase("VALUES"))
             throw new IllegalArgumentException("Sintaxis no válida");
-            
+
         String values = parts[5];
 
         String[] colBrk = columns.split(",");
@@ -392,7 +394,6 @@ public class Parser {
         // headerBrkValues son los valores de las columnas
         // headerBrk son los nombres de la columna
 
-
         for (int i = 0; i < headerBrkValues.length; i++)
             for (TypeBuilder type : types)
                 if (type.getName().equalsIgnoreCase(headerBrk[i])) {
@@ -406,7 +407,8 @@ public class Parser {
             stringToWrite += headerBrkValues[i] + ",";
         stringToWrite = stringToWrite.substring(0, stringToWrite.length() - 1);
 
-        try (BufferedWriter bf = new BufferedWriter(new FileWriter(FileManagement.getDatabasePath() + name + ".csv", true))) {
+        try (BufferedWriter bf = new BufferedWriter(
+                new FileWriter(FileManagement.getDatabasePath() + name + ".csv", true))) {
             bf.write(stringToWrite);
             bf.newLine();
         } catch (IOException e) {
@@ -417,7 +419,8 @@ public class Parser {
     }
 
     public static boolean verifyUniqueness(String colName, String tableName, String value) throws Exception {
-        try (BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
+        try (BufferedReader br = new BufferedReader(
+                new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
             String line = br.readLine();
 
             int index = 0;
@@ -437,7 +440,6 @@ public class Parser {
                     throw new IllegalArgumentException("PK repetida");
 
             }
-
 
         } catch (NumberFormatException e) {
             throw new NumberFormatException("La pk se repite");
@@ -475,7 +477,8 @@ public class Parser {
                 } catch (NumberFormatException e) {
                     throw new NumberFormatException("Tipo de dato incorrecto");
                 }
-                if (T.getLength() != -1 && value.contains(".") && value.length() - 1 - value.indexOf(".") > T.getLength())
+                if (T.getLength() != -1 && value.contains(".")
+                        && value.length() - 1 - value.indexOf(".") > T.getLength())
                     throw new NumberFormatException("Precisión equivocada");
                 return true;
             case "varchar":
@@ -489,21 +492,21 @@ public class Parser {
         return false;
     }
 
-
     public static String select(String query) throws Exception {
         if (FileManagement.getDatabasePath() == null)
             throw new FileNotFoundException("No se ha accedido a ninguna base de datos");
-        
+
         // HashMap que contiene los alias
         HashMap<String, String> alias = new HashMap<>();
 
-        // Args son todos los argumentos del select, condicionales guarda los condicionales
+        // Args son todos los argumentos del select, condicionales guarda los
+        // condicionales
         String args = "", condicionales = "", tableName = "";
         String[] words = query.split(" ");
         int index = 0;
-            
+
         for (int i = 1; i < words.length; i++) {
-            if(words[i].equalsIgnoreCase("FROM")){
+            if (words[i].equalsIgnoreCase("FROM")) {
                 index = i;
                 break;
             }
@@ -523,32 +526,34 @@ public class Parser {
             // Trabajar alias
             String[] linea = argsTrabajados[i].split(" ");
 
-            if(linea.length == 3)
-                if(linea[2].charAt(0)=='\''&&linea[2].charAt(linea[2].length()-1)=='\''){
+            if (linea.length == 3)
+                if (linea[2].charAt(0) == '\'' && linea[2].charAt(linea[2].length() - 1) == '\'') {
                     alias.put(linea[0], linea[2]);
-                    header+=linea[0] + ",";
-                }
-                else 
+                    header += linea[0] + ",";
+                } else
                     throw new Exception("Alias incorrectos");
-            else if(linea.length == 1)
-                header+=linea[0] + ",";
+            else if (linea.length == 1)
+                header += linea[0] + ",";
             else
                 throw new Exception("Sintaxis incorrecta");
         }
-        header = header.substring(0, header.length()-1);
+        header = header.substring(0, header.length() - 1);
 
-
-        if(index + 1 < words.length)
+        if (index + 1 < words.length)
             tableName = words[++index];
-        else throw new Exception("Sintaxis incorrecta");
+        else
+            throw new Exception("Sintaxis incorrecta");
 
-        if(!FileManagement.searchForTable(tableName))
+        if (!FileManagement.searchForTable(tableName))
             throw new IOException("Tabla no encontrada");
+
+        /*  */
 
         try {
             for (int i = index + 1; i < words.length; i++) {
-                if(Utilities.isReservedWord(words[i])) continue;
-                condicionales+=words[i] + " ";
+                if (Utilities.isReservedWord(words[i]))
+                    continue;
+                condicionales += words[i] + " ";
             }
         } catch (Exception e) {
             throw new Exception("Sintaxis incorrecta");
@@ -556,100 +561,116 @@ public class Parser {
 
         // Header guarda los argumentos sin el alias
         // System.out.println(header);
+
+        if (!header.equals("*")) {
+            ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
+            String[] hdbrk = header.split(",");
+
+            for (int i = 0; i < hdbrk.length; i++) {
+                boolean flag = false;
+                for (int j = 0; j < hdbrk.length; j++) {
+                    if (tp.get(j).getName().equals(hdbrk[i])) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (!flag)
+                    throw new IllegalArgumentException("Parámetros desconocidos en el select");
+            }
+        }
         
         // Condicionales guarda el string de los condicionales
         // System.out.println(condicionales);
 
         // Alias guarda los alias
         // for(String key : alias.keySet())
-        //     System.out.println(key + " " + alias.get(key));
+        // System.out.println(key + " " + alias.get(key));
 
         boolean containsWhere = false;
-        if(query.contains("WHERE")||query.contains("where")){
+        if (query.contains("WHERE") || query.contains("where")) {
             manageWhere(condicionales, tableName);
             containsWhere = true;
-        } 
+        }
 
-        String path = ((containsWhere) ? (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv" : 
-        FileManagement.getDatabasePath() + tableName + ".csv");
+        String path = ((containsWhere) ? (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv"
+                : FileManagement.getDatabasePath() + tableName + ".csv");
 
-        if(header.equals("*")){
-            try(BufferedReader br = new BufferedReader(new FileReader(path))){
+        if (header.equals("*")) {
+            try (BufferedReader br = new BufferedReader(new FileReader(path))) {
                 String line = br.readLine();
                 String[] headerBrk = line.split(",");
-    
+
                 for (int i = 0; i < headerBrk.length; i++) {
-                    if(alias.containsKey(headerBrk[i]))
+                    if (alias.containsKey(headerBrk[i]))
                         System.out.print(alias.get(headerBrk[i]) + " ");
                     else
                         System.out.print(headerBrk[i] + " ");
                 }
                 System.out.println();
-    
-                while((line = br.readLine()) != null){
+
+                while ((line = br.readLine()) != null) {
                     String[] arrBrk = line.split(",");
                     for (int i = 0; i < arrBrk.length; i++) {
                         System.out.print(arrBrk[i] + " ");
                     }
                     System.out.println();
                 }
-            } catch (IOException e){
+            } catch (IOException e) {
                 throw new IOException("Parámetros del select incorrectos");
             }
         } else {
             String[] headerBrk = header.split(",");
-            try(BufferedReader br = new BufferedReader(new FileReader(path))){
+            try (BufferedReader br = new BufferedReader(new FileReader(path))) {
                 String line = br.readLine();
                 String[] headerFile = line.split(",");
                 ArrayList<Integer> indexes = new ArrayList<>();
-    
+
                 for (int i = 0; i < headerBrk.length; i++) {
                     for (int j = 0; j < headerFile.length; j++) {
-                        if(headerBrk[i].equals(headerFile[j])){
+                        if (headerBrk[i].equals(headerFile[j])) {
                             indexes.add(j);
                             break;
                         }
                     }
                 }
-    
+
                 for (int i = 0; i < headerBrk.length; i++) {
-                    if(alias.containsKey(headerBrk[i]))
+                    if (alias.containsKey(headerBrk[i]))
                         System.out.print(alias.get(headerBrk[i]) + " ");
                     else
                         System.out.print(headerBrk[i] + " ");
                 }
                 System.out.println();
-    
-                while((line = br.readLine()) != null){
+
+                while ((line = br.readLine()) != null) {
                     String[] arrBrk = line.split(",");
                     for (int i = 0; i < indexes.size(); i++) {
                         System.out.print(arrBrk[indexes.get(i)] + " ");
                     }
                     System.out.println();
                 }
-            } catch (IOException e){
+            } catch (IOException e) {
                 throw new IOException("Parámetros del select incorrectos");
             }
         }
 
-        
-
-        if(containsWhere)
+        if (containsWhere)
             Utilities.deleteFilesFromWhere();
 
         return "Select realizado con éxito";
     }
 
-    public static void manageWhere(String condiciones, String tableName) throws  Exception {
+    public static void manageWhere(String condiciones, String tableName) throws Exception {
         String path = FileManagement.getDatabasePath() + tableName + ".csv";
-        
+
         String temp = "";
         for (int i = 0; i < condiciones.length(); i++) {
-            if(condiciones.charAt(i)==' ') continue;
-            temp+=condiciones.charAt(i);
+            if (condiciones.charAt(i) == ' ')
+                continue;
+            temp += condiciones.charAt(i);
         }
         condiciones = temp;
-        
+
         // Regex para cambiar == a .equalsTo en strings
         condiciones = condiciones.replace("'", "\"");
         condiciones = condiciones.replace("=", "==");
@@ -670,8 +691,8 @@ public class Parser {
         condiciones = condiciones.replace("tempOne", ">=");
 
         String header = "";
-        
-        try(BufferedReader br = new BufferedReader(new FileReader(path))){
+
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             header = br.readLine();
 
             ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
@@ -680,189 +701,198 @@ public class Parser {
                 for (int j = 0; j < tp.size(); j++) {
                     if (condiciones.contains(tp.get(j).getName())) {
                         TypeBuilder t = tp.get(j);
-    
+
                         switch (tp.get(j).getDataType()) {
                             case "int":
-                                condiciones = condiciones.replace(t.getName(), "Integer.parseInt(String.valueOf(arrBrk["+j+"]))");
+                                condiciones = condiciones.replace(t.getName(),
+                                        "Integer.parseInt(String.valueOf(arrBrk[" + j + "]))");
                                 break;
                             case "float":
-                                condiciones = condiciones.replace(t.getName(), "Float.parseFloat(String.valueOf(arrBrk["+j+"]))");
+                                condiciones = condiciones.replace(t.getName(),
+                                        "Float.parseFloat(String.valueOf(arrBrk[" + j + "]))");
                                 break;
                             case "double":
-                                condiciones = condiciones.replace(t.getName(), "Double.parseDouble(String.valueOf(arrBrk["+j+"]))");
+                                condiciones = condiciones.replace(t.getName(),
+                                        "Double.parseDouble(String.valueOf(arrBrk[" + j + "]))");
                                 break;
                             case "varchar":
-                                condiciones = condiciones.replace(t.getName(), "String.valueOf(arrBrk["+j+"])");
+                                condiciones = condiciones.replace(t.getName(), "String.valueOf(arrBrk[" + j + "])");
                                 break;
                         }
                     }
                 }
             }
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new IOException("No se pudo abrir el archivo");
         }
         // Hasta acá está full trabajada la condición
         // Integer.parseInt(String.valueOf(arrBrk[0]))==10&&String.valueOf(arrBrk[1]).equals("miguel")
         // System.out.println(condiciones);
-        
+
         // Path para mandarle la sentencia y el nombre de la tabla
         String temporalAuxInfoPath = (new File("")).getAbsolutePath() + "/temporalAuxInfo.txt";
-        String temporalTableTemp = new File("").getAbsolutePath() + "/dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.java";
+        String temporalTableTemp = new File("").getAbsolutePath()
+                + "/dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.java";
         String tableDir = FileManagement.getDatabasePath() + tableName + ".csv";
 
-        try(BufferedWriter bf = new BufferedWriter(new FileWriter(temporalAuxInfoPath))){
+        try (BufferedWriter bf = new BufferedWriter(new FileWriter(temporalAuxInfoPath))) {
             bf.write(tableDir);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new IOException("No se pudo abrir el archivo");
         }
 
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(temporalTableTemp))){
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(temporalTableTemp))) {
             bw.write("package edu.upvictoria.fpoo;\n" + //
-                                "\n" + //
-                                "import java.io.BufferedReader;\n" + //
-                                "import java.io.BufferedWriter;\n" + //
-                                "import java.io.File;\n" + //
-                                "import java.io.FileReader;\n" + //
-                                "import java.io.FileWriter;\n" + //
-                                "import java.util.ArrayList;\n" + //
-                                "\n" + //
-                                "public class TablaTemp {\n" + //
-                                "    public static void main(String[] args) {\n" + //
-                                "        String tableDir = \"\";\n" + //
-                                "\n" + //
-                                "        String temporalAuxInfoPath = (new File(\"\")).getAbsolutePath() + \"/temporalAuxInfo.txt\";\n" + //
-                                "        try(BufferedReader br = new BufferedReader(new FileReader(temporalAuxInfoPath))){\n" + //
-                                "            tableDir = br.readLine();\n" + //
-                                "        } catch (Exception e){\n" + //
-                                "            System.out.println(e.getMessage());\n" + //
-                                "        }\n" + //
-                                "\n" + //
-                                "        ArrayList<String> tabla = new ArrayList<>();\n" + //
-                                "        try(BufferedReader br = new BufferedReader(new FileReader(tableDir))){\n" + //
-                                "            String line = br.readLine();\n" + //
-                                "            tabla.add(line);\n" + //
-                                "            while ((line = br.readLine()) != null) {\n" + //
-                                "                String[] arrBrk = line.split(\",\"); \n" + //
-                                "                if("+condiciones+")\n" + //
-                                "                tabla.add(line);\n" + //
-                                "            }\n" + //
-                                "        } catch (Exception e){\n" + //
-                                "            System.out.println(e.getMessage());\n" + //
-                                "        }\n" + //
-                                "\n" + //
-                                "        try(BufferedWriter bw = new BufferedWriter(new FileWriter((new File(\"\")).getAbsolutePath() + \"/temporalAuxInfo.csv\"))){\n" + //
-                                "            for(String row : tabla){\n" + //
-                                "                bw.write(row);\n" + //
-                                "                bw.newLine();\n" + //
-                                "            }\n" + //
-                                "        } catch (Exception e){\n" + //
-                                "            System.out.println(e.getMessage());\n" + //
-                                "        }\n" + //
-                                "    }\n" + //
-                                "}");
-        } catch(IOException e){
+                    "\n" + //
+                    "import java.io.BufferedReader;\n" + //
+                    "import java.io.BufferedWriter;\n" + //
+                    "import java.io.File;\n" + //
+                    "import java.io.FileReader;\n" + //
+                    "import java.io.FileWriter;\n" + //
+                    "import java.util.ArrayList;\n" + //
+                    "\n" + //
+                    "public class TablaTemp {\n" + //
+                    "    public static void main(String[] args) {\n" + //
+                    "        String tableDir = \"\";\n" + //
+                    "\n" + //
+                    "        String temporalAuxInfoPath = (new File(\"\")).getAbsolutePath() + \"/temporalAuxInfo.txt\";\n"
+                    + //
+                    "        try(BufferedReader br = new BufferedReader(new FileReader(temporalAuxInfoPath))){\n" + //
+                    "            tableDir = br.readLine();\n" + //
+                    "        } catch (Exception e){\n" + //
+                    "            System.out.println(e.getMessage());\n" + //
+                    "        }\n" + //
+                    "\n" + //
+                    "        ArrayList<String> tabla = new ArrayList<>();\n" + //
+                    "        try(BufferedReader br = new BufferedReader(new FileReader(tableDir))){\n" + //
+                    "            String line = br.readLine();\n" + //
+                    "            tabla.add(line);\n" + //
+                    "            while ((line = br.readLine()) != null) {\n" + //
+                    "                String[] arrBrk = line.split(\",\"); \n" + //
+                    "                if(" + condiciones + ")\n" + //
+                    "                tabla.add(line);\n" + //
+                    "            }\n" + //
+                    "        } catch (Exception e){\n" + //
+                    "            System.out.println(e.getMessage());\n" + //
+                    "        }\n" + //
+                    "\n" + //
+                    "        try(BufferedWriter bw = new BufferedWriter(new FileWriter((new File(\"\")).getAbsolutePath() + \"/temporalAuxInfo.csv\"))){\n"
+                    + //
+                    "            for(String row : tabla){\n" + //
+                    "                bw.write(row);\n" + //
+                    "                bw.newLine();\n" + //
+                    "            }\n" + //
+                    "        } catch (Exception e){\n" + //
+                    "            System.out.println(e.getMessage());\n" + //
+                    "        }\n" + //
+                    "    }\n" + //
+                    "}");
+        } catch (IOException e) {
             throw new Exception("No se pudo crear el archivo");
         }
 
         try {
             Process processOne = Runtime.getRuntime().exec("javac " + temporalTableTemp);
             processOne.waitFor(2000, TimeUnit.SECONDS);
-            Process processTwo = Runtime.getRuntime().exec("java -classpath dataBaseManager/src/main/java/ edu.upvictoria.fpoo.TablaTemp");
+            Process processTwo = Runtime.getRuntime()
+                    .exec("java -classpath dataBaseManager/src/main/java/ edu.upvictoria.fpoo.TablaTemp");
             processTwo.waitFor(2000, TimeUnit.SECONDS);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new Exception("No se encontró el archivo");
         }
         Utilities.deleteFilesFromWhere();
     }
 
     public static String deleteFrom(String query) throws Exception {
-        if(FileManagement.getDatabasePath() == null)
+        if (FileManagement.getDatabasePath() == null)
             throw new FileNotFoundException("No se ha accedido a ninguna base de datos");
 
         String[] words = query.split(" ");
 
-        if(words.length<3) 
+        if (words.length < 3)
             throw new Exception("Sintaxis incorrecta");
 
         String tableName = words[2];
 
-        if(!FileManagement.searchForTable(tableName))
+        if (!FileManagement.searchForTable(tableName))
             throw new Exception("No se ha encontrado el archivo;");
 
         String arguments = "";
 
         boolean flag = false;
         String condicionales = "";
-        if(query.contains("WHERE")||query.contains("where")){
+        if (query.contains("WHERE") || query.contains("where")) {
 
             for (int i = 3; i < words.length; i++) {
-                if(Utilities.isReservedWord(words[i])) continue;
-                condicionales+=words[i];
+                if (Utilities.isReservedWord(words[i]))
+                    continue;
+                condicionales += words[i];
             }
             System.out.println(condicionales);
             flag = true;
-        } else if(words.length > 3) throw new IllegalArgumentException("Sintaxis no válida");
+        } else if (words.length > 3)
+            throw new IllegalArgumentException("Sintaxis no válida");
 
-        if(!flag){
+        if (!flag) {
             String path = FileManagement.getDatabasePath() + tableName;
             String header = "";
 
-            try(BufferedReader bf = new BufferedReader(new FileReader(path + ".csv"))){
+            try (BufferedReader bf = new BufferedReader(new FileReader(path + ".csv"))) {
                 header = bf.readLine();
-            } catch(FileNotFoundException e){
+            } catch (FileNotFoundException e) {
                 throw new FileNotFoundException("No se encontró el archivo");
             }
 
-            try(BufferedWriter bw = new BufferedWriter(new FileWriter(path + ".csv"))){
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(path + ".csv"))) {
                 bw.write(header);
                 bw.newLine();
-            } catch(FileNotFoundException e){
+            } catch (FileNotFoundException e) {
                 throw new FileNotFoundException("No se encontró el archivo");
             }
-            return "Borrado éxitoso";
+            return "";
         }
-        
+
         String path = (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv";
 
         ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
 
         int indexPK = 0;
-        for (int i = 0; i < tp.size(); i++) 
-            if(tp.get(i).isPrimaryKey()){
+        for (int i = 0; i < tp.size(); i++)
+            if (tp.get(i).isPrimaryKey()) {
                 indexPK = i;
                 break;
             }
         manageWhere(condicionales, tableName);
-        
+
         HashSet<String> idsAExcluir = new HashSet<String>();
 
-        try(BufferedReader br = new BufferedReader(new FileReader(path))){
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             String line;
-            while((line = br.readLine()) != null){
+            while ((line = br.readLine()) != null) {
                 String[] lineBrk = line.split(",");
                 idsAExcluir.add(lineBrk[indexPK]);
             }
-        } catch (FileNotFoundException e){
-            throw new FileNotFoundException("No se encontró el archivo");
+        } catch (FileNotFoundException e) {
+            throw new FileNotFoundException("Parámetros del delete incorrectos");
         }
 
         ArrayList<String> nuevaTabla = new ArrayList<>();
 
         String pathTableName = FileManagement.getDatabasePath() + tableName + ".csv";
         String header;
-        try(BufferedReader bf = new BufferedReader(new FileReader(pathTableName))){
+        try (BufferedReader bf = new BufferedReader(new FileReader(pathTableName))) {
             header = bf.readLine();
             String line;
-            while((line = bf.readLine()) != null){
+            while ((line = bf.readLine()) != null) {
                 String[] lineBrk = line.split(",");
-                if(!idsAExcluir.contains(lineBrk[indexPK]))
+                if (!idsAExcluir.contains(lineBrk[indexPK]))
                     nuevaTabla.add(line);
             }
-        } catch(FileNotFoundException e){
+        } catch (FileNotFoundException e) {
             throw new FileNotFoundException("No se encontró el archivo");
         }
 
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(pathTableName))){
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(pathTableName))) {
             bw.write(header);
             bw.newLine();
 
@@ -873,16 +903,30 @@ public class Parser {
         }
 
         Utilities.deleteFilesFromWhere();
-        return "Borrado éxitoso";
+        return "";
     }
 
-    public static String update(String query) throws Exception{
-        
+    public static String update(String query) throws Exception {
+        // update table set val1=v1... where ...
+        if (FileManagement.getDatabasePath() == null)
+            throw new NullPointerException("No hay ninguna base de datos a la que hayas accedido");
 
+        String[] words = query.split(" ");
+
+        if (words.length < 3)
+            throw new IllegalArgumentException("No hay suficientes parámetros");
+
+        String tableName = words[1];
+
+        if(!FileManagement.searchForTable(tableName))
+            throw new FileNotFoundException("No encontré el archivo");
+        
+        String set = "";
+
+        
+        
         return "Update realizado con éxito";
     }
-    
-
 
     /**
      * Function to validate parenthesis
@@ -898,7 +942,8 @@ public class Parser {
                     break;
                 case ')':
                     parenthesis--;
-                    if (parenthesis < 0) return false;
+                    if (parenthesis < 0)
+                        return false;
                     break;
             }
         }

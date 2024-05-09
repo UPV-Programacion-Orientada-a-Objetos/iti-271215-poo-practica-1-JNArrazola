@@ -105,5 +105,6 @@ public class Utilities {
         new File((new File("")).getAbsolutePath() + "/temporalAuxInfo.txt").delete();
         new File("dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.java").delete();
         new File("dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.class").delete();
+        new File(new File("").getAbsolutePath()+"/temporalAuxInfo.csv").delete();
     }
 }
