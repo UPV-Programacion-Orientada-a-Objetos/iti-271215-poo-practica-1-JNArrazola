@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "TablaTemp",
+            "request": "launch",
+            "mainClass": "edu.upvictoria.fpoo.TablaTemp",
+            "projectName": "dataBaseManager"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"
