@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,7 +37,7 @@ public class Parser {
             } else if (brokeStr[0].equalsIgnoreCase("UPDATE")) { // TODO: Update
                 // return update(query);
             } else if (brokeStr[0].equalsIgnoreCase("DELETE") && brokeStr[1].equalsIgnoreCase("FROM")) { // TODO: Delete from
-                // return deleteFrom(query);
+                return deleteFrom(query);
             } else if (brokeStr[0].equalsIgnoreCase("SELECT")) { 
                 return select(query);
             } else if (brokeStr[0].equalsIgnoreCase("INSERT") && brokeStr[1].equalsIgnoreCase("INTO")) {
@@ -478,7 +479,7 @@ public class Parser {
                     throw new NumberFormatException("Precisión equivocada");
                 return true;
             case "varchar":
-                if (value.charAt(0) != '\'' && value.charAt(value.length() - 1) != '\'')
+                if (value.charAt(0) != '\'' || value.charAt(value.length() - 1) != '\'')
                     throw new NumberFormatException("Tipo de dato incorrecto");
                 if (T.getLength() != -1 && value.length() > T.getLength())
                     throw new Exception("Mayor longitud");
@@ -780,54 +781,98 @@ public class Parser {
 
         String[] words = query.split(" ");
 
-        if(words.length < 3)
-            throw new IllegalArgumentException("Sintaxis incorrecta");
+        if(words.length<3) 
+            throw new Exception("Sintaxis incorrecta");
 
         String tableName = words[2];
 
         if(!FileManagement.searchForTable(tableName))
-            throw new IOException("Tabla no encontrada");
+            throw new Exception("No se ha encontrado el archivo;");
 
-        String condicionales = "";
+        String arguments = "";
 
         boolean flag = false;
+        String condicionales = "";
         if(query.contains("WHERE")||query.contains("where")){
-            manageWhere(condicionales, tableName);
-            flag = true;
-        }
-        try {
+
             for (int i = 3; i < words.length; i++) {
                 if(Utilities.isReservedWord(words[i])) continue;
-                condicionales+=words[i] + " ";
+                condicionales+=words[i];
             }
-        } catch (Exception e) {
-            throw new Exception("Sintaxis incorrecta");
-        }
+            System.out.println(condicionales);
+            flag = true;
+        } else if(words.length > 3) throw new IllegalArgumentException("Sintaxis no válida");
 
-        if(condicionales.isEmpty()&&!flag)
-            throw new Exception("Sintaxis incorrecta");
-        
-        String path = ((flag) ? (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv" : 
-        FileManagement.getDatabasePath() + tableName + ".csv");
-        
         if(!flag){
+            String path = FileManagement.getDatabasePath() + tableName;
             String header = "";
 
-            try(BufferedReader br = new BufferedReader(new FileReader(path))){
-                header = br.readLine();
-            } catch (IOException e){
-                throw new IOException("No se pudo abrir el archivo");
+            try(BufferedReader bf = new BufferedReader(new FileReader(path + ".csv"))){
+                header = bf.readLine();
+            } catch(FileNotFoundException e){
+                throw new FileNotFoundException("No se encontró el archivo");
             }
 
-            try(BufferedWriter bw = new BufferedWriter(new FileWriter(path))){
+            try(BufferedWriter bw = new BufferedWriter(new FileWriter(path + ".csv"))){
                 bw.write(header);
                 bw.newLine();
-            } catch(IOException e){
-                throw new IOException("No se pudo abrir el archivo");
+            } catch(FileNotFoundException e){
+                throw new FileNotFoundException("No se encontró el archivo");
+            }
+            return "Borrado éxitoso";
+        }
+        
+        String path = (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv";
+
+        ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
+
+        int indexPK = 0;
+        for (int i = 0; i < tp.size(); i++) 
+            if(tp.get(i).isPrimaryKey()){
+                indexPK = i;
+                break;
+            }
+        manageWhere(condicionales, tableName);
+        
+        HashSet<String> idsAExcluir = new HashSet<String>();
+
+        try(BufferedReader br = new BufferedReader(new FileReader(path))){
+            String line;
+            while((line = br.readLine()) != null){
+                String[] lineBrk = line.split(",");
+                idsAExcluir.add(lineBrk[indexPK]);
+            }
+        } catch (FileNotFoundException e){
+            throw new FileNotFoundException("No se encontró el archivo");
+        }
+
+        ArrayList<String> nuevaTabla = new ArrayList<>();
+
+        String pathTableName = FileManagement.getDatabasePath() + tableName + ".csv";
+        String header;
+        try(BufferedReader bf = new BufferedReader(new FileReader(pathTableName))){
+            header = bf.readLine();
+            String line;
+            while((line = bf.readLine()) != null){
+                String[] lineBrk = line.split(",");
+                if(!idsAExcluir.contains(lineBrk[indexPK]))
+                    nuevaTabla.add(line);
+            }
+        } catch(FileNotFoundException e){
+            throw new FileNotFoundException("No se encontró el archivo");
+        }
+
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter(pathTableName))){
+            bw.write(header);
+            bw.newLine();
+
+            for (int j = 0; j < nuevaTabla.size(); j++) {
+                bw.write(nuevaTabla.get(j));
+                bw.newLine();
             }
         }
-            
 
+        Utilities.deleteFilesFromWhere();
         return "Borrado éxitoso";
     }
 

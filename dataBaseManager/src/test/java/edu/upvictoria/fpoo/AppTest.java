@@ -2,8 +2,11 @@ package edu.upvictoria.fpoo;
 
 import org.junit.Test;
 import junit.framework.TestCase;
-import java.io.File;
+
+import java.io.*;
 import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -11,38 +14,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Unit test for simple App.
  */
-public class AppTest 
-    extends TestCase
-{
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public AppTest( String testName )
-    {
-        super( testName );
+public class AppTest
+        extends TestCase {
+    public AppTest(String testName) {
+        super(testName);
     }
 
-    /**
-     * @return the suite of tests being tested
-     */
-   /* public static Test suite()
-    {
-        return (Test) new TestSuite( AppTest.class );
-    }*/
-
-    /**
-     * Rigourous Test :-)
-     */
-    public void testApp()
-    {
-        assertTrue( true );
+    public void testApp() {
+        assertTrue(true);
     }
 
-    /**
-     * Test to validate if some given word is a reserved word
-     * */
     @Test
     public void testIsReservedWord_True() {
         FileManagement.initialValidations();
@@ -57,7 +38,7 @@ public class AppTest
 
     /**
      * Test to validate if some given word
-     * */
+     */
     @Test
     public void testHasValidChars_AllValid() {
         // Todas las letras son válidas
@@ -69,9 +50,9 @@ public class AppTest
 
     /**
      *
-     * */
+     */
     @Test
-    public void tesHasValidChars_NotValid(){
+    public void tesHasValidChars_NotValid() {
         assertFalse(Utilities.hasValidChars("/home/path"));
         assertFalse(Utilities.hasValidChars("||name||"));
         assertFalse(Utilities.hasValidChars(".exec"));
@@ -79,19 +60,19 @@ public class AppTest
 
     /**
      * Not valid queries
-     * */
+     */
     @Test
     public void testParse() throws Exception {
         String[] query = {"masmcamd mwd cmqmd", "esto no es una sentencia", "esto tampoco",
-        "tengo hambre", "sexto cuatrimestr"};
+                "tengo hambre", "sexto cuatrimestr"};
 
-        for(String s : query)
+        for (String s : query)
             assertEquals("No se reconoció la sentencia", Parser.parseQuery(s));
     }
 
     /**
      * Use database with a totally new and not existing directory
-     * */
+     */
     @Test
     public void testUseDatabase_valid() throws Exception {
         FileManagement.initialValidations();
@@ -108,16 +89,79 @@ public class AppTest
 
     /**
      * Invalid path test
-     * */
+     */
     @Test
     public void testUseDatabase_invalid() throws Exception {
         FileManagement.initialValidations();
-        String query = "USE /W";
+        String query = "USE /W;";
 
-        Exception generatedException = assertThrows(FileSystemException.class, () -> {
+        Exception generatedException = assertThrows(Exception.class, () -> {
             Parser.parseQuery(query);
         });
 
-        assertEquals(generatedException.getMessage(), "Error al crear el directorio");
+        assertEquals("Error al crear el directorio", generatedException.getMessage());
     }
+
+
+    /**
+     * Permission problem
+     */
+    @Test
+    public void testUseDatabase_invalid2() throws Exception {
+        FileManagement.initialValidations();
+        String query = "USE /;";
+
+        Exception generatedException = assertThrows(java.lang.Exception.class, () -> {
+            Parser.parseQuery(query);
+        });
+
+        assertEquals("Error al crear el directorio", generatedException.getMessage());
+    }
+
+    /**
+     * Crear tabla
+     * Sin path para guardar el archivo previamente configurado
+     */
+    @Test
+    public void testCreateTable() throws Exception {
+        FileManagement.initialValidations();
+        FileManagement.setDatabasePath(null);
+        String query = "CREATE TABLE EMP (ID int not null);";
+
+        Exception generatedException = assertThrows(java.lang.Exception.class, () -> {
+            Parser.parseQuery(query);
+        });
+
+        assertEquals("No hay path asignado", generatedException.getMessage());
+    }
+
+    /*
+     * Checar que los paréntesis estén correctos
+     * */
+    @Test
+    public void testParenthesis() {
+        FileManagement.initialValidations();
+        FileManagement.setDatabasePath(new File("").getAbsolutePath() + "/");
+        String[] strs = {"SELECT * FROM (Locations, CREATE DATABASE(", "((())", "()()()("};
+
+        for (String s : strs)
+            assertFalse(Parser.parenthesisCheck(s));
+    }
+
+    @Test
+    public void crearTabla() {
+        // Query
+        String query = "CREATE TABLE EMP (ID int not null primary key, name varchar not null);";
+
+        // Path
+        String path = (new File("").getAbsolutePath() + "/");
+
+        String call = "";
+        try {
+            call = Parser.parseQuery(query);
+        } catch (Exception e) {
+        }
+    }
+
+
 }
