@@ -48,6 +48,9 @@ public class Utilities {
         reservedWords.add("BY");
         reservedWords.add("WHERE");
         reservedWords.add("SET");
+        reservedWords.add("AND");
+        reservedWords.add("OR");
+        reservedWords.add("NOT");
     }
 
     public static void fillTypes(){
