@@ -1,0 +1,1 @@
+/home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/testTable.csv

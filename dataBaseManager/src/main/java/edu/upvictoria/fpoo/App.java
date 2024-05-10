@@ -16,7 +16,7 @@ public class App {
         // Initial validations for the entire work of the program
         FileManagement.initialValidations();
 
-        // App launcher
+        // App launcherl
         App app = new App();
         app.run();
     }
