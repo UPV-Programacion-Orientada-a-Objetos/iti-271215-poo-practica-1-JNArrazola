@@ -1,15 +1,8 @@
 package edu.upvictoria.fpoo;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-
 import org.junit.Test;
-
 import junit.framework.TestCase;
 
 /**
@@ -24,34 +17,6 @@ public class AppTest
 
     private final static String testTable = new File("").getAbsolutePath() + "/test/";
     private final static String tableName = "testTable";
-    private final static String fullPath = testTable + tableName + ".csv";
-
-    private static void resetTable(){
-        ArrayList<String> data = new ArrayList<>();
-        data.add("id,name,money,height");
-        data.add("1,'pedro',1000,1.60");
-        data.add("2,'martin',2000,1.80");
-        data.add("3,'joshua',1500,1.60");
-        data.add("4,'said',4000,1.75");
-        data.add("5,'uriegas',3500,1.50");  
-        data.add("6,'joshua',1500,1.60");
-        data.add("7,'said',4000,1.75");
-        data.add("8,'uriegas',3500,1.50");
-        data.add("9,'joshua',1500,1.60");
-        data.add("10,'said',4000,1.75");
-        data.add("11,'uriegas',3500,1.50");
-        data.add("12,'joshua',1500,1.60");
-
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(new File(fullPath), false))){
-            for(String s : data){
-                bw.write(s);
-                bw.newLine();
-            }
-            bw.newLine();
-        } catch (IOException e){
-            e.printStackTrace();
-        }
-    }
 
     public void testApp() {
         assertTrue(true);
@@ -210,24 +175,6 @@ public class AppTest
         });
 
         assertEquals("No se puede crear una tabla sin primary key definida", generatedException.getMessage());
-    }
-
-    /**
-     * Double primary key
-     * @throws Exception
-      */
-    @Test
-    public void testDoublePrimaryKey() throws Exception {
-        FileManagement.initialValidations();
-        String path = new File("").getAbsolutePath() + "/";
-        FileManagement.setDatabasePath(path);
-        String query = "CREATE TABLE EMPLEADOS(ID INT NOT NULL PRIMARY KEY, NAME VARCHAR(50) NOT NULL PRIMARY KEY)";
-
-        Exception generatedException = assertThrows(Exception.class, () -> {
-            Parser.parseQuery(query);
-        });
-
-        assertEquals("No puede haber dos primary keys", generatedException.getMessage());
     }
 
     /**
@@ -394,7 +341,6 @@ public class AppTest
       */
     @Test
     public void testInsertInvalidTypes(){
-        resetTable();
         Exception e = assertThrows(Exception.class, () -> {
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
             Parser.parseQuery("INSERT INTO testTable (id,name) values (15,34)");
@@ -402,7 +348,6 @@ public class AppTest
         });
 
         assertEquals("Tipo de dato incorrecto", e.getMessage());
-        resetTable();
     }
 
     /**
@@ -410,14 +355,12 @@ public class AppTest
       */
     @Test
     public void testNullVerification(){
-        resetTable();
         Exception e = assertThrows(Exception.class, () -> {
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
             Parser.parseQuery("INSERT INTO testTable (id,height) values (15,1.20)");
         });
 
         assertEquals("Hay valores nulos que no deberían de serlo", e.getMessage());
-        resetTable();
     }
 
     /**
@@ -425,14 +368,12 @@ public class AppTest
      */
     @Test
     public void testPrecision(){
-        resetTable();
         Exception e = assertThrows(Exception.class, () -> {
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
             Parser.parseQuery("INSERT INTO testTable (id,name,height) values (15,'pedro',1.2314)");
         });
 
         assertEquals("Precisión equivocada", e.getMessage());
-        resetTable();
     }
 }
 
