@@ -52,30 +52,17 @@ public class FileManagement {
 
         File file = new File(path);
         if (!file.exists()) {
-            try {
-                if (!file.mkdir()) {
-                    throw new IOException("No se puede crear el directorio");
-                }
-            } catch (SecurityException e) {
-                throw new FileSystemException("Permiso denegado para crear el directorio");
-            } catch (IOException e) {
-                throw new FileSystemException("Error al crear el directorio");
-            }
-        } else {
-            try {
-                File tempFile = File.createTempFile("writeTest", ".tmp", new File(path));
-                tempFile.delete();
-            } catch (Exception e) {
-                throw new FileSystemException("No tengo permisos");
-            }
-            databasePath = path;
-            if(!path.endsWith("/")) databasePath+="/";
-            return "Base de datos accesada con éxito";
+            throw new FileNotFoundException("El directorio no existe");
+        } 
+        try {
+            File tempFile = File.createTempFile("writeTest", ".tmp", new File(path));
+            tempFile.delete();
+        } catch (Exception e) {
+            throw new FileSystemException("No tengo permisos");
         }
-
         databasePath = path;
         if(!path.endsWith("/")) databasePath+="/";
-        return "Directorio creado con éxito";
+        return "Directorio encontrado";
     }
 
     // -------------------------------------------------

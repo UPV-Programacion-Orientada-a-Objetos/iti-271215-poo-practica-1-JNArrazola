@@ -129,6 +129,7 @@ public class Parser {
 
         if (tableName.equals(""))
             throw new IllegalArgumentException("Nombre de tabla vacío");
+        tableName = tableName.trim();
 
         if (!Utilities.hasValidChars(tableName)) {
             throw new IllegalArgumentException("La entrada no tiene caracteres válidos");
@@ -180,6 +181,9 @@ public class Parser {
             String name = "", length = "", type = "";
             boolean isPrimaryKey = false, canBeNull = true;
 
+            if(s.toUpperCase().contains("PRIMARY KEY") && primaryKey)
+                throw new RuntimeException("No puede haber dos primary keys");
+
             String[] brokenSentence = s.split(" ");
 
             if (brokenSentence.length == 0)
@@ -187,6 +191,8 @@ public class Parser {
 
             // Name asignation
             try {
+                if(brokenSentence.length>6) 
+                    throw new IllegalArgumentException("Argumentos incorrectos");
                 name = brokenSentence[0];
 
                 if (!Utilities.hasValidChars(name))
@@ -224,7 +230,7 @@ public class Parser {
             // Ending of determine type block
 
             // Validations
-            if (Utilities.isReservedWord(name) || Utilities.isType(name))
+            if (Utilities.isReservedWord(name.toUpperCase()) || Utilities.isType(name.toUpperCase()))
                 throw new IllegalArgumentException("El nombre no puede tener palabras reservadas");
 
             if (!Utilities.isType(type))
@@ -242,17 +248,16 @@ public class Parser {
             try {
                 if (brokenSentence[2].equalsIgnoreCase("NOT") && brokenSentence[3].equalsIgnoreCase("NULL"))
                     canBeNull = false;
-                else if (brokenSentence[2].equalsIgnoreCase("PRIMARY") && brokenSentence[3].equalsIgnoreCase("KEY")) {
-                    if (primaryKey)
+                else if(brokenSentence[2].equalsIgnoreCase("NULL"))
+                    canBeNull = true;
+                else if(brokenSentence[2].equalsIgnoreCase("PRIMARY") && brokenSentence[3].equalsIgnoreCase("KEY")){
+                    if(primaryKey)
                         throw new RuntimeException("No puede haber dos primary keys");
                     isPrimaryKey = true;
                     primaryKey = true;
-                    canBeNull = false;
-                }
-            } catch (IndexOutOfBoundsException ignored) {
-            } catch (RuntimeException e) {
-                throw new RuntimeException();
-            }
+                } else
+                    throw new RuntimeException("Sintaxis incorrecta");
+            }  catch (RuntimeException e) {}
 
             try {
                 if (brokenSentence[4].equalsIgnoreCase("PRIMARY") && brokenSentence[5].equalsIgnoreCase("KEY")) {
@@ -260,19 +265,24 @@ public class Parser {
                         throw new RuntimeException("No puede haber dos primary keys");
                     isPrimaryKey = true;
                     primaryKey = true;
-                } else
-                    throw new RuntimeException("Sintaxis incorrecta");
-
+                } 
             } catch (IndexOutOfBoundsException ignored) {
             } catch (RuntimeException e) {
                 throw new RuntimeException();
             }
 
-            types.add(new TypeBuilder(name, canBeNull, type, Integer.parseInt(length), isPrimaryKey));
+            for(TypeBuilder t : types)
+                if(t.getName().equalsIgnoreCase(name))
+                    throw new IllegalArgumentException("No puede haber dos columnas con el mismo nombre");
+
+            if(!s.contains("NOT NULL")&&s.contains("NULL")&&s.contains("PRIMARY KEY"))
+                throw new IllegalArgumentException("No puede ser nulo y a la vez primary key");
+
+            types.add(new TypeBuilder(name.trim(), canBeNull, type.trim(), Integer.parseInt(length), isPrimaryKey));
         }
 
         if (!primaryKey)
-            throw new RuntimeException("Sintaxis incorrecta");
+            throw new RuntimeException("No se puede crear una tabla sin primary key definida");
 
         FileManagement.createFileTable(tableName, types);
 
@@ -343,6 +353,8 @@ public class Parser {
 
         String columns = parts[3];
 
+        if(columns.equalsIgnoreCase("VALUES")) throw new IllegalArgumentException("Falta especificar columnas");
+
         if (!parts[4].equalsIgnoreCase("VALUES"))
             throw new IllegalArgumentException("Sintaxis no válida");
 
@@ -352,7 +364,7 @@ public class Parser {
         String[] valBrk = values.split(",");
 
         if (colBrk.length != valBrk.length)
-            throw new RuntimeException("Sintaxis incorrecta");
+            throw new RuntimeException("Los valores a insertar y las columnas no coinciden");
 
         for (int i = 0; i < colBrk.length; i++) {
             colBrk[i] = colBrk[i].trim();
@@ -383,6 +395,7 @@ public class Parser {
             }
 
             if(!flag) throw new IllegalArgumentException("Valores de insert into inválidos");
+            
         }
 
         if (header.isEmpty())
@@ -625,7 +638,7 @@ public class Parser {
                 : FileManagement.getDatabasePath() + tableName + ".csv");
 
         if ((!new File(path).exists())) {
-            // Utilities.deleteFilesFromWhere();
+            Utilities.deleteFilesFromWhere();
             throw new IllegalArgumentException("WHERE inválido");
         }
 
@@ -733,8 +746,6 @@ public class Parser {
                 for (int j = 0; j < tp.size(); j++) {
                     if (condiciones.contains(tp.get(j).getName())) {
                         TypeBuilder t = tp.get(j);
-                        System.out.println(t.getName());
-                        System.out.println(t.getDataType());
                         switch (tp.get(j).getDataType().toLowerCase()) {
                             case "int":
                                 condiciones = condiciones.replace(t.getName(),
@@ -742,7 +753,7 @@ public class Parser {
                                 break;
                             case "float":
                                 condiciones = condiciones.replace(t.getName(),
-                                        "(Math.round(Float.parseFloat(arrBrk[" + j + "]) * 10000.0) / 10000.0)");
+                                        "(Math.round(Float.parseFloat(arrBrk[" + j + "]) * 1000000.0) / 1000000.0)");
                                 break;
                             case "double":
                                 condiciones = condiciones.replace(t.getName(),
@@ -1180,7 +1191,7 @@ public class Parser {
             String[] lineBrk = lines.get(i).split(",");
             if (idsAExcluir.contains(lineBrk[indexPK])) {
                 Utilities.deleteFilesFromWhere();
-                throw new IllegalArgumentException("PK repetida");
+                throw new IllegalArgumentException("ERROR: Se va a duplicar más de una primary key, lo que arriesga la integridad de los datos");
             }
             idsAExcluir.add(lineBrk[indexPK]);
         }
