@@ -100,7 +100,7 @@ public class AppTest
     @Test
     public void testParse() throws Exception {
         String[] query = { "masmcamd mwd cmqmd", "esto no es una sentencia", "esto tampoco",
-                "tengo hambre", "sexto cuatrimestr" };
+                "tengo hambre", "sexto cuatrimestr"};
 
         for (String s : query)
             assertEquals("No se reconoció la sentencia", Parser.parseQuery(s));
@@ -239,7 +239,7 @@ public class AppTest
         FileManagement.initialValidations();
         String path = new File("").getAbsolutePath() + "/";
         FileManagement.setDatabasePath(path);
-        String query = "create table a(id int not null primary key pedro elizondo);";
+        String query = "create table add(id int not null primary key pedro elizondo);";
 
         Exception generatedException = assertThrows(Exception.class, () -> {
             Parser.parseQuery(query);
@@ -338,7 +338,7 @@ public class AppTest
      * Create test
       */
     @Test
-    public static void testCreateTableWithDuplicateKey(){
+    public void testCreateTableWithDuplicateKey(){
         Exception e = assertThrows(Exception.class, () -> {
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
             Parser.parseQuery("CREATE TABLE PRUEBA(ID INT NOT NULL PRIMARY KEY, ID INT NOT NULL PRIMARY KEY)");
@@ -353,7 +353,7 @@ public class AppTest
      * Update with invalid arguments
       */
     @Test
-    public static void testUpdateInvalid(){
+    public void testUpdateInvalid(){
         Exception e = assertThrows(Exception.class, () -> {
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
             Parser.parseQuery("update testTable set a=2, b=3 where i = 1");
@@ -367,7 +367,7 @@ public class AppTest
      * Insert with columns not matching the values
       */
     @Test
-    public static void testInsertInvalid(){
+    public void testInsertInvalid(){
         Exception e = assertThrows(Exception.class, () -> {
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
             Parser.parseQuery("insert into testTable (id, name) values (1, 'joshua', 2)");
@@ -380,7 +380,7 @@ public class AppTest
      * Repeated primary key
       */
     @Test
-    public static void testInsertRepeatedPrimaryKey(){
+    public void testInsertRepeatedPrimaryKey(){
         Exception e = assertThrows(Exception.class, () -> {
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
             Parser.parseQuery("insert into testTable (id, name) values (1,'jose')");
@@ -393,7 +393,7 @@ public class AppTest
      * Insert with invalid types of arguments
       */
     @Test
-    public static void testInsertInvalidTypes(){
+    public void testInsertInvalidTypes(){
         resetTable();
         Exception e = assertThrows(Exception.class, () -> {
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
@@ -402,6 +402,36 @@ public class AppTest
         });
 
         assertEquals("Tipo de dato incorrecto", e.getMessage());
+        resetTable();
+    }
+
+    /**
+     * Null values that should be null
+      */
+    @Test
+    public void testNullVerification(){
+        resetTable();
+        Exception e = assertThrows(Exception.class, () -> {
+            Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
+            Parser.parseQuery("INSERT INTO testTable (id,height) values (15,1.20)");
+        });
+
+        assertEquals("Hay valores nulos que no deberían de serlo", e.getMessage());
+        resetTable();
+    }
+
+    /**
+     * Precision test
+     */
+    @Test
+    public void testPrecision(){
+        resetTable();
+        Exception e = assertThrows(Exception.class, () -> {
+            Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
+            Parser.parseQuery("INSERT INTO testTable (id,name,height) values (15,'pedro',1.2314)");
+        });
+
+        assertEquals("Precisión equivocada", e.getMessage());
         resetTable();
     }
 }

@@ -10,16 +10,8 @@ import java.util.ArrayList;
  * @matricula 2230023
  * */
 public class FileManagement {
-    // Read without Scanner
-    private static final BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
-
-    private static String appPath = new File("").getAbsolutePath() + "/";
-
     // Path in which i will store the that contains the path to the database
     private static String folderPath = new File("").getAbsolutePath() + "/appPath";
-
-    // Path that cointains the txt that guides to the entire database
-    private static String folderAppPath = folderPath + "/path.txt";
 
     // path to the database
     private static String databasePath = null;

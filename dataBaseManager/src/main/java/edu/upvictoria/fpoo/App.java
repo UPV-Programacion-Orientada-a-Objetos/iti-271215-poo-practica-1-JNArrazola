@@ -1,5 +1,7 @@
 package edu.upvictoria.fpoo;
 
+import java.io.FileNotFoundException;
+
 /**
  * Actividad 1: Biblioteca de sentencias SQL
  * Asignatura: Programación Orientada a Objetos
@@ -30,6 +32,10 @@ public class App {
         do {
             try{
                 System.out.println(Parser.parseQuery(Utilities.readBuffer()));
+            } catch (FileNotFoundException e){
+                System.out.println(e.getMessage());
+            } catch(IllegalArgumentException e){
+                System.out.println(e.getMessage());
             } catch (Exception e){
                 System.out.println(e.getMessage());
             }

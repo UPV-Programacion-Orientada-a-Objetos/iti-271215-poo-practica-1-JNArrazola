@@ -131,8 +131,11 @@ public class Parser {
             throw new IllegalArgumentException("Nombre de tabla vacío");
         tableName = tableName.trim();
 
+        if(tableName.length()==1)
+            throw new IllegalArgumentException("El nombre de la tabla no puede ser tan corto");
+
         if (!Utilities.hasValidChars(tableName)) {
-            throw new IllegalArgumentException("La entrada no tiene caracteres válidos");
+            throw new IllegalArgumentException("El nombre de la tabla no tiene caracteres válidos");
         } else if (!FileManagement.verifyDuplicatesTableName(tableName)) {
             throw new IllegalArgumentException("La entrada ya existe");
         }
@@ -181,7 +184,7 @@ public class Parser {
             String name = "", length = "", type = "";
             boolean isPrimaryKey = false, canBeNull = true;
 
-            if(s.toUpperCase().contains("PRIMARY KEY") && primaryKey)
+            if (s.toUpperCase().contains("PRIMARY KEY") && primaryKey)
                 throw new RuntimeException("No puede haber dos primary keys");
 
             String[] brokenSentence = s.split(" ");
@@ -191,7 +194,7 @@ public class Parser {
 
             // Name asignation
             try {
-                if(brokenSentence.length>6) 
+                if (brokenSentence.length > 6)
                     throw new IllegalArgumentException("Argumentos incorrectos");
                 name = brokenSentence[0];
 
@@ -248,16 +251,17 @@ public class Parser {
             try {
                 if (brokenSentence[2].equalsIgnoreCase("NOT") && brokenSentence[3].equalsIgnoreCase("NULL"))
                     canBeNull = false;
-                else if(brokenSentence[2].equalsIgnoreCase("NULL"))
+                else if (brokenSentence[2].equalsIgnoreCase("NULL"))
                     canBeNull = true;
-                else if(brokenSentence[2].equalsIgnoreCase("PRIMARY") && brokenSentence[3].equalsIgnoreCase("KEY")){
-                    if(primaryKey)
+                else if (brokenSentence[2].equalsIgnoreCase("PRIMARY") && brokenSentence[3].equalsIgnoreCase("KEY")) {
+                    if (primaryKey)
                         throw new RuntimeException("No puede haber dos primary keys");
                     isPrimaryKey = true;
                     primaryKey = true;
                 } else
                     throw new RuntimeException("Sintaxis incorrecta");
-            }  catch (RuntimeException e) {}
+            } catch (RuntimeException e) {
+            }
 
             try {
                 if (brokenSentence[4].equalsIgnoreCase("PRIMARY") && brokenSentence[5].equalsIgnoreCase("KEY")) {
@@ -265,19 +269,22 @@ public class Parser {
                         throw new RuntimeException("No puede haber dos primary keys");
                     isPrimaryKey = true;
                     primaryKey = true;
-                } 
+                }
             } catch (IndexOutOfBoundsException ignored) {
             } catch (RuntimeException e) {
                 throw new RuntimeException();
             }
 
-            for(TypeBuilder t : types)
-                if(t.getName().equalsIgnoreCase(name))
+            for (TypeBuilder t : types)
+                if (t.getName().equalsIgnoreCase(name))
                     throw new IllegalArgumentException("No puede haber dos columnas con el mismo nombre");
 
-            if(!s.contains("NOT NULL")&&s.contains("NULL")&&s.contains("PRIMARY KEY"))
+            if (!s.contains("NOT NULL") && s.contains("NULL") && s.contains("PRIMARY KEY"))
                 throw new IllegalArgumentException("No puede ser nulo y a la vez primary key");
 
+            if(name.trim().length()==1)
+                throw new IllegalArgumentException("El nombre de la columna no puede ser tan corto");
+                
             types.add(new TypeBuilder(name.trim(), canBeNull, type.trim(), Integer.parseInt(length), isPrimaryKey));
         }
 
@@ -353,7 +360,8 @@ public class Parser {
 
         String columns = parts[3];
 
-        if(columns.equalsIgnoreCase("VALUES")) throw new IllegalArgumentException("Falta especificar columnas");
+        if (columns.equalsIgnoreCase("VALUES"))
+            throw new IllegalArgumentException("Falta especificar columnas");
 
         if (!parts[4].equalsIgnoreCase("VALUES"))
             throw new IllegalArgumentException("Sintaxis no válida");
@@ -382,20 +390,21 @@ public class Parser {
 
         String[] headerBrk = header.split(",");
 
-        for (int i = 0; i < colBrk.length; i++) 
+        for (int i = 0; i < colBrk.length; i++)
             colBrk[i] = colBrk[i].trim();
 
         for (int i = 0; i < colBrk.length; i++) {
-            boolean flag = false; 
+            boolean flag = false;
             for (int j = 0; j < types.size(); j++) {
-                if(colBrk[i].equals(types.get(j).getName())) {
+                if (colBrk[i].equals(types.get(j).getName())) {
                     flag = true;
                     break;
                 }
             }
 
-            if(!flag) throw new IllegalArgumentException("Valores de insert into inválidos");
-            
+            if (!flag)
+                throw new IllegalArgumentException("Valores de insert into inválidos");
+
         }
 
         if (header.isEmpty())
@@ -723,13 +732,13 @@ public class Parser {
         condiciones = condiciones.replace("'", "\"");
         condiciones = condiciones.replace("=", "==");
         condiciones = condiciones.replace("<>", "!=");
-        
+
         // Regex para cambiar == a .equalsTo en strings
         String regexOne = "==\\\"([^\\\"]*)\\\"";
         Pattern pattern = Pattern.compile(regexOne);
         Matcher matcher = pattern.matcher(condiciones);
         condiciones = matcher.replaceAll(".equals(\"\'$1\'\")");
-        
+
         condiciones = condiciones.replace("AND", "&&");
         condiciones = condiciones.replace("and", "&&");
         condiciones = condiciones.replace("OR", "||");
@@ -753,7 +762,7 @@ public class Parser {
                                 break;
                             case "float":
                                 condiciones = condiciones.replace(t.getName(),
-                                        "(Math.round(Float.parseFloat(arrBrk[" + j + "]) * 1000000.0) / 1000000.0)");
+                                        "(Math.round(Float.parseFloat(arrBrk[" + j + "]) * 10000000.0) / 10000000.0)");
                                 break;
                             case "double":
                                 condiciones = condiciones.replace(t.getName(),
@@ -984,7 +993,7 @@ public class Parser {
         }
 
         if (set.equals(""))
-            throw new IllegalArgumentException("Set inválid");
+            throw new IllegalArgumentException("Set inválido");
 
         String[] setBrk = set.split(",");
 
@@ -1025,7 +1034,7 @@ public class Parser {
             if (!flag)
                 throw new IllegalArgumentException("Set inválido");
         }
-
+        
         ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
         boolean hasPK = false;
 
@@ -1191,20 +1200,21 @@ public class Parser {
             String[] lineBrk = lines.get(i).split(",");
             if (idsAExcluir.contains(lineBrk[indexPK])) {
                 Utilities.deleteFilesFromWhere();
-                throw new IllegalArgumentException("ERROR: Se va a duplicar más de una primary key, lo que arriesga la integridad de los datos");
+                throw new IllegalArgumentException(
+                        "ERROR: Se va a duplicar más de una primary key, lo que arriesga la integridad de los datos");
             }
             idsAExcluir.add(lineBrk[indexPK]);
         }
 
-        // try(BufferedWriter bw = new BufferedWriter(new
-        // FileWriter(FileManagement.getDatabasePath() + tableName + ".csv"))){
-        // for(String line : lines){
-        // bw.write(line);
-        // bw.newLine();
-        // }
-        // } catch (IOException e){
-        // throw new IOException("No se pudo abrir el archivo");
-        // }
+        try (BufferedWriter bw = new BufferedWriter(
+                new FileWriter(FileManagement.getDatabasePath() + tableName + ".csv"))) {
+            for (String line : lines) {
+                bw.write(line);
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            throw new IOException("No se pudo abrir el archivo");
+        }
 
         Utilities.deleteFilesFromWhere();
         return "Update realizado con éxito";

@@ -68,7 +68,9 @@ public class Utilities {
 
     public static boolean hasValidChars(String str){
         return !(str.contains(".")|| str.contains("/")||
-                str.contains("|")||str.contains("&"));
+                str.contains("|")||str.contains("&")||str.contains("=")
+                ||str.contains("<")||str.contains(">")||str.contains("!")
+                ||str.contains(".csv")||str.contains(".txt")||str.contains("_aux"));
     }
 
     public static String readBuffer(){
