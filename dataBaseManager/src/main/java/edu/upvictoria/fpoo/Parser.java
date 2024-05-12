@@ -12,9 +12,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Function that parses the query to be able to distinguish between different
@@ -522,11 +519,9 @@ public class Parser {
         if (!FileManagement.searchForTable(tableName))
             throw new IOException("Tabla no encontrada");
 
-        /*  */
-
         try {
             for (int i = index + 1; i < words.length; i++) {
-                if (Utilities.isReservedWord(words[i]))
+                if (Utilities.isReservedWord(words[i])&& !words[i].equalsIgnoreCase("Null"))
                     continue;
                 condicionales += words[i] + " ";
             }
@@ -593,8 +588,10 @@ public class Parser {
                 if (Where.manageWhere(condicionales, line, tableName))
                     resultTable.add(line);
             }
-        } catch (Exception e) {
-            throw new FileNotFoundException("No se encontró el archivo");
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        } catch (IOException e) {
+            throw new IOException("No se pudo abrir el archivo");
         }
 
         String[] headerBreak = resultTable.get(0).split(",");
@@ -614,147 +611,7 @@ public class Parser {
             System.out.println();
         }
 
-
         return "Select realizado con éxito";
-    }
-
-    public static void manageWhere(String condiciones, String tableName) throws Exception {
-        String path = FileManagement.getDatabasePath() + tableName + ".csv";
-
-        String temp = "";
-        for (int i = 0; i < condiciones.length(); i++) {
-            if (condiciones.charAt(i) == ' ')
-                continue;
-            temp += condiciones.charAt(i);
-        }
-        condiciones = temp;
-
-        condiciones = condiciones.replace(">=", "tempOne");
-        condiciones = condiciones.replace("<=", "tempTwo");
-        condiciones = condiciones.replace("'", "\"");
-        condiciones = condiciones.replace("=", "==");
-        condiciones = condiciones.replace("<>", "!=");
-
-        // Regex para cambiar == a .equalsTo en strings
-        String regexOne = "==\\\"([^\\\"]*)\\\"";
-        Pattern pattern = Pattern.compile(regexOne);
-        Matcher matcher = pattern.matcher(condiciones);
-        condiciones = matcher.replaceAll(".equals(\"\'$1\'\")");
-
-        condiciones = condiciones.replace("AND", "&&");
-        condiciones = condiciones.replace("and", "&&");
-        condiciones = condiciones.replace("OR", "||");
-        condiciones = condiciones.replace("or", "||");
-        condiciones = condiciones.replace("tempTwo", "<=");
-        condiciones = condiciones.replace("tempOne", ">=");
-
-        String header = "";
-        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-            header = br.readLine();
-            ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
-
-            for (int i = 0; i < condiciones.length(); i++) {
-                for (int j = 0; j < tp.size(); j++) {
-                    if (condiciones.contains(tp.get(j).getName())) {
-                        TypeBuilder t = tp.get(j);
-                        switch (tp.get(j).getDataType().toLowerCase()) {
-                            case "int":
-                                condiciones = condiciones.replace(t.getName(),
-                                        "Integer.parseInt(String.valueOf(arrBrk[" + j + "]))");
-                                break;
-                            case "float":
-                                condiciones = condiciones.replace(t.getName(),
-                                        "(Math.round(Float.parseFloat(arrBrk[" + j + "]) * 10000000.0) / 10000000.0)");
-                                break;
-                            case "double":
-                                condiciones = condiciones.replace(t.getName(),
-                                        "(Math.round(Double.parseDouble(String.valueOf(arrBrk[" + j + "]))");
-                                break;
-                            case "varchar":
-                                condiciones = condiciones.replace(t.getName(), "String.valueOf(arrBrk[" + j + "])");
-                                break;
-                        }
-                    }
-                }
-            }
-        } catch (IOException e) {
-            throw new IOException("No se pudo abrir el archivo");
-        }
-        // Hasta acá está full trabajada la condición
-        // Integer.parseInt(String.valueOf(arrBrk[0]))==10&&String.valueOf(arrBrk[1]).equals("miguel")
-        // System.out.println(condiciones);
-
-        // Path para mandarle la sentencia y el nombre de la tabla
-        String temporalAuxInfoPath = (new File("")).getAbsolutePath() + "/temporalAuxInfo.txt";
-        String temporalTableTemp = new File("").getAbsolutePath()
-                + "/dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.java";
-        String tableDir = FileManagement.getDatabasePath() + tableName + ".csv";
-
-        try (BufferedWriter bf = new BufferedWriter(new FileWriter(temporalAuxInfoPath))) {
-            bf.write(tableDir);
-        } catch (IOException e) {
-            throw new IOException("No se pudo abrir el archivo");
-        }
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(temporalTableTemp))) {
-            bw.write("package edu.upvictoria.fpoo;\n" + //
-                    "\n" + //
-                    "import java.io.BufferedReader;\n" + //
-                    "import java.io.BufferedWriter;\n" + //
-                    "import java.io.File;\n" + //
-                    "import java.io.FileReader;\n" + //
-                    "import java.io.FileWriter;\n" + //
-                    "import java.util.ArrayList;\n" + //
-                    "\n" + //
-                    "public class TablaTemp {\n" + //
-                    "    public static void main(String[] args) {\n" + //
-                    "        String tableDir = \"\";\n" + //
-                    "\n" + //
-                    "        String temporalAuxInfoPath = (new File(\"\")).getAbsolutePath() + \"/temporalAuxInfo.txt\";\n"
-                    + //
-                    "        try(BufferedReader br = new BufferedReader(new FileReader(temporalAuxInfoPath))){\n" + //
-                    "            tableDir = br.readLine();\n" + //
-                    "        } catch (Exception e){\n" + //
-                    "            System.out.println(e.getMessage());\n" + //
-                    "        }\n" + //
-                    "\n" + //
-                    "        ArrayList<String> tabla = new ArrayList<>();\n" + //
-                    "        try(BufferedReader br = new BufferedReader(new FileReader(tableDir))){\n" + //
-                    "            String line = br.readLine();\n" + //
-                    "            tabla.add(line);\n" + //
-                    "            while ((line = br.readLine()) != null) {\n" + //
-                    "                String[] arrBrk = line.split(\",\"); \n" + //
-                    "                if(" + condiciones + ")\n" + //
-                    "                tabla.add(line);\n" + //
-                    "            }\n" + //
-                    "        } catch (Exception e){\n" + //
-                    "            System.out.println(e.getMessage());\n" + //
-                    "        }\n" + //
-                    "\n" + //
-                    "        try(BufferedWriter bw = new BufferedWriter(new FileWriter((new File(\"\")).getAbsolutePath() + \"/temporalAuxInfo.csv\"))){\n"
-                    + //
-                    "            for(String row : tabla){\n" + //
-                    "                bw.write(row);\n" + //
-                    "                bw.newLine();\n" + //
-                    "            }\n" + //
-                    "        } catch (Exception e){\n" + //
-                    "            System.out.println(e.getMessage());\n" + //
-                    "        }\n" + //
-                    "    }\n" + //
-                    "}");
-        } catch (IOException e) {
-            throw new Exception("No se pudo crear el archivo");
-        }
-
-        try {
-            Process processOne = Runtime.getRuntime().exec("javac " + temporalTableTemp);
-            processOne.waitFor(2000, TimeUnit.SECONDS);
-            Process processTwo = Runtime.getRuntime()
-                    .exec("java -classpath dataBaseManager/src/main/java/ edu.upvictoria.fpoo.TablaTemp");
-            processTwo.waitFor(2000, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            throw new Exception("No se encontró el archivo");
-        }
     }
 
     public static String deleteFrom(String query) throws Exception {
@@ -771,98 +628,43 @@ public class Parser {
         if (!FileManagement.searchForTable(tableName))
             throw new Exception("No se ha encontrado el archivo;");
 
-        String arguments = "";
-
-        boolean flag = false;
         String condicionales = "";
         if (query.contains("WHERE") || query.contains("where")) {
-
             for (int i = 3; i < words.length; i++) {
                 if (Utilities.isReservedWord(words[i]))
                     continue;
-                condicionales += words[i];
+                condicionales += words[i] + " ";
             }
-            System.out.println(condicionales);
-            flag = true;
-        } else if (words.length > 3)
-            throw new IllegalArgumentException("Sintaxis no válida");
-
-        if (!flag) {
-            String path = FileManagement.getDatabasePath() + tableName;
-            String header = "";
-
-            try (BufferedReader bf = new BufferedReader(new FileReader(path + ".csv"))) {
-                header = bf.readLine();
-            } catch (FileNotFoundException e) {
-                throw new FileNotFoundException("No se encontró el archivo");
-            }
-
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(path + ".csv"))) {
-                bw.write(header);
-                bw.newLine();
-            } catch (FileNotFoundException e) {
-                throw new FileNotFoundException("No se encontró el archivo");
-            }
-            return "Update realizado con éxito";
         }
 
-        String path = (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv";
-
-        ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
-
-        int indexPK = 0;
-        for (int i = 0; i < tp.size(); i++)
-            if (tp.get(i).isPrimaryKey()) {
-                indexPK = i;
-                break;
-            }
-        manageWhere(condicionales, tableName);
-
-        if (!new File(path).exists()) {
-            Utilities.deleteFilesFromWhere();
-            throw new IllegalArgumentException("Where invalido");
-        }
-
-        HashSet<String> idsAExcluir = new HashSet<String>();
-
-        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+        ArrayList<String> lines = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(
+                new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
             String line;
+            lines.add(line = br.readLine());
             while ((line = br.readLine()) != null) {
-                String[] lineBrk = line.split(",");
-                idsAExcluir.add(lineBrk[indexPK]);
+                if (!Where.manageWhere(condicionales, line, tableName))
+                    lines.add(line);
             }
-        } catch (FileNotFoundException e) {
-            throw new FileNotFoundException("Parámetros del delete incorrectos");
+        } catch (IOException e) {
+            throw new IOException("No se pudo abrir el archivo");
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        } catch (Exception e) {
+            throw new Exception("Error de sintaxis");
         }
 
-        ArrayList<String> nuevaTabla = new ArrayList<>();
-
-        String pathTableName = FileManagement.getDatabasePath() + tableName + ".csv";
-        String header;
-        try (BufferedReader bf = new BufferedReader(new FileReader(pathTableName))) {
-            header = bf.readLine();
-            String line;
-            while ((line = bf.readLine()) != null) {
-                String[] lineBrk = line.split(",");
-                if (!idsAExcluir.contains(lineBrk[indexPK]))
-                    nuevaTabla.add(line);
-            }
-        } catch (FileNotFoundException e) {
-            throw new FileNotFoundException("No se encontró el archivo");
-        }
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(pathTableName))) {
-            bw.write(header);
-            bw.newLine();
-
-            for (int j = 0; j < nuevaTabla.size(); j++) {
-                bw.write(nuevaTabla.get(j));
+        try (BufferedWriter bw = new BufferedWriter(
+                new FileWriter(FileManagement.getDatabasePath() + tableName + ".csv"))) {
+            for (String line : lines) {
+                bw.write(line);
                 bw.newLine();
             }
+        } catch (IOException e) {
+            throw new IOException("No se pudo abrir el archivo");
         }
 
-        Utilities.deleteFilesFromWhere();
-        return "Update realizado con éxito";
+        return "Delete realizado con éxito";
     }
 
     public static String update(String query) throws Exception {
@@ -937,39 +739,25 @@ public class Parser {
                 throw new IllegalArgumentException("Set inválido");
         }
 
-        ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
-        boolean hasPK = false;
-
-        for (String key : values.keySet()) {
-            for (TypeBuilder t : tp) {
-                if (t.getName().equals(key) && t.isPrimaryKey()) {
-                    hasPK = true;
-                    break;
+        String condicionales = "";
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].equalsIgnoreCase("WHERE") && i + 1 < words.length) {
+                for (int j = i + 1; j < words.length; j++) {
+                    if (Utilities.isReservedWord(words[j]))
+                        continue;
+                    condicionales += words[j];
                 }
             }
         }
 
-        for (String key : values.keySet()) {
-            for (TypeBuilder t : tp) {
-                if (t.getName().equals(key)) {
-                    checkType(t, values.get(key));
-                }
-            }
-        }
+        ArrayList<String> lines = new ArrayList<>();
+        lines.add(header);
 
-        boolean flag = false;
-
-        if (query.contentEquals("WHERE") || query.contains("where"))
-            flag = true;
-
-        if (!flag) {
-            ArrayList<String> lines = new ArrayList<>();
-            lines.add(header);
-
-            try (BufferedReader br = new BufferedReader(
-                    new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
-                String line = br.readLine();
-                while ((line = br.readLine()) != null) {
+        try (BufferedReader br = new BufferedReader(
+                new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
+            String line = br.readLine();
+            while ((line = br.readLine()) != null) {
+                if (Where.manageWhere(condicionales, line, tableName)) {
                     String[] lineBrk = line.split(",");
                     for (String key : values.keySet()) {
                         for (int i = 0; i < lineBrk.length; i++) {
@@ -984,128 +772,23 @@ public class Parser {
                         newLine += lineBrk[i] + ",";
                     newLine = newLine.substring(0, newLine.length() - 1);
                     lines.add(newLine);
-                }
-            } catch (IOException e) {
-                throw new IOException("No se pudo abrir el archivo");
+                } else
+                    lines.add(line);
             }
-
-            if (lines.size() == 1)
-                throw new IllegalArgumentException("No se encontraron registros");
-
-            ArrayList<TypeBuilder> types = FileManagement.decompressInfo(tableName);
-
-            int indexPK = 0;
-            for (int i = 0; i < types.size(); i++)
-                if (types.get(i).isPrimaryKey()) {
-                    indexPK = i;
-                    break;
-                }
-
-            HashSet<String> ids = new HashSet<>();
-
-            for (int i = 1; i < lines.size(); i++) {
-                String[] lineBrk = lines.get(i).split(",");
-                if (ids.contains(lineBrk[indexPK]))
-                    throw new IllegalArgumentException("PK repetida");
-                ids.add(lineBrk[indexPK]);
-            }
-
-            try (BufferedWriter bw = new BufferedWriter(
-                    new FileWriter(FileManagement.getDatabasePath() + tableName + ".csv"))) {
-                for (String line : lines) {
-                    bw.write(line);
-                    bw.newLine();
-                }
-            } catch (IOException e) {
-                throw new IOException("No se pudo abrir el archivo");
-            }
-            return "Update realizado con éxito";
+        } catch (IOException e) {
+            throw new IOException("No se pudo abrir el archivo");
         }
 
-        String condicionales = "";
-
-        for (int i = 0; i < words.length; i++) {
-            if (words[i].equalsIgnoreCase("WHERE") && i + 1 < words.length) {
-                for (int j = i + 1; j < words.length; j++) {
-                    if (Utilities.isReservedWord(words[j]))
-                        continue;
-                    condicionales += words[j];
-                }
-            }
-        }
-
-        manageWhere(condicionales, tableName);
-
-        if (!new File((new File("").getAbsolutePath()) + "/temporalAuxInfo.csv").exists()) {
-            Utilities.deleteFilesFromWhere();
-            throw new IllegalArgumentException("Where inválido");
-        }
+        for (String line : lines)
+            System.out.println(line);
 
         HashSet<String> ids = new HashSet<>();
-
-        try (BufferedReader br = new BufferedReader(
-                new FileReader((new File("").getAbsolutePath()) + "/temporalAuxInfo.csv"))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] lineBrk = line.split(",");
-                ids.add(lineBrk[0]);
-            }
-        } catch (IOException e) {
-            throw new IOException("No se pudo abrir el archivo");
-        }
-
-        ArrayList<String> lines = new ArrayList<>();
-
-        try (BufferedReader br = new BufferedReader(
-                new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
-            // i need to save all the lines, the not modified and modified ones in lines
-            // because then we are going to verify the pk's
-
-            String line = br.readLine();
-            lines.add(line);
-
-            while ((line = br.readLine()) != null) {
-                String[] lineBrk = line.split(",");
-                if (ids.contains(lineBrk[0])) {
-                    for (String key : values.keySet()) {
-                        for (int i = 0; i < lineBrk.length; i++) {
-                            if (header.split(",")[i].equals(key)) {
-                                lineBrk[i] = values.get(key);
-                                break;
-                            }
-                        }
-                    }
-                }
-                String newLine = "";
-                for (int i = 0; i < lineBrk.length; i++)
-                    newLine += lineBrk[i] + ",";
-                newLine = newLine.substring(0, newLine.length() - 1);
-                lines.add(newLine);
-            }
-
-        } catch (IOException e) {
-            throw new IOException("No se pudo abrir el archivo");
-        }
-
-        ArrayList<TypeBuilder> types = FileManagement.decompressInfo(tableName);
-
-        int indexPK = 0;
-        for (int i = 0; i < types.size(); i++)
-            if (types.get(i).isPrimaryKey()) {
-                indexPK = i;
-                break;
-            }
-
-        HashSet<String> idsAExcluir = new HashSet<>();
-
         for (int i = 1; i < lines.size(); i++) {
             String[] lineBrk = lines.get(i).split(",");
-            if (idsAExcluir.contains(lineBrk[indexPK])) {
-                Utilities.deleteFilesFromWhere();
+            if (ids.contains(lineBrk[0]))
                 throw new IllegalArgumentException(
-                        "ERROR: Se va a duplicar más de una primary key, lo que arriesga la integridad de los datos");
-            }
-            idsAExcluir.add(lineBrk[indexPK]);
+                        "Esta sentencia UPDATE asignaría dos ID's iguales, lo cual no es permitido");
+            ids.add(lineBrk[0]);
         }
 
         try (BufferedWriter bw = new BufferedWriter(
@@ -1118,7 +801,6 @@ public class Parser {
             throw new IOException("No se pudo abrir el archivo");
         }
 
-        Utilities.deleteFilesFromWhere();
         return "Update realizado con éxito";
     }
 
