@@ -22,7 +22,24 @@ public class Where {
 	 * @return A boolean that is going to be true if the line is going to be added to the result
 	 * @throws Exception If the where clause is invalid
 	  */
-	public static boolean manageWhere(String condicionales, String line, HashMap<String,Integer> ind, HashMap<String, String> type) throws Exception {
+	public static boolean manageWhere(String condicionales, String line, String tableName) throws Exception {
+		if(condicionales.equals("")) return true;
+		
+		String headerOfTable = Utilities.getHeaderOfTable(tableName);
+        ArrayList<TypeBuilder> types = FileManagement.decompressInfo(tableName);
+
+        HashMap<String, Integer> indexMap = new HashMap<>();
+        HashMap<String, String> typeMap = new HashMap<>();
+
+        String[] headerOfTableBreak = headerOfTable.split(",");
+        for (int i = 0; i < headerOfTableBreak.length; i++) {
+            indexMap.put(headerOfTableBreak[i], i);
+
+            for (int j = 0; j < types.size(); j++)
+                if (types.get(j).getName().equals(headerOfTableBreak[i]))
+                    typeMap.put(headerOfTableBreak[i], types.get(j).getDataType());
+        }
+
 		// As a parameter i need the conditional sentence, the line i will evaluate, and the map of (name,index) and a hm of types
 		ArrayList<String> conditionals = new ArrayList<>();
 		ArrayList<String> operators = new ArrayList<>();
@@ -43,7 +60,7 @@ public class Where {
 		if(conditionals.size() - 1 != operators.size())
 			throw new IllegalArgumentException("Sentencia WHERE inválida");
 
-		return recursiveEvaluation(ind, type, conditionals, operators, 0, line);
+		return recursiveEvaluation(indexMap, typeMap, conditionals, operators, 0, line);
 	}
 
 	public static boolean recursiveEvaluation(HashMap<String,Integer> ind, HashMap<String, String> type, 

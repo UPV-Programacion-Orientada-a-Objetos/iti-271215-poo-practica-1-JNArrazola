@@ -101,21 +101,22 @@ public class Parser {
             throw new NullPointerException("No hay path asignado");
 
         // Analizar primera parte del string (CREATE TABLE name)
-        if(query.indexOf("(")==-1)
+        if (query.indexOf("(") == -1)
             throw new IllegalArgumentException("Sintaxis incorrecta");
-        
+
         String firstPart = query.substring(0, query.indexOf("("));
         String[] firstPartBreak = firstPart.split(" ");
 
         // esto quiere decir que no se entiende donde esta el create table|
-        if(firstPartBreak.length < 3)
+        if (firstPartBreak.length < 3)
             throw new Exception("Error de sintaxis");
 
         // Verificar las palabras
         String tableName = firstPartBreak[2];
 
-        // Verificar que no exista el archivo, además verificar ciertas propiedades del nombre
-        if(FileManagement.searchForTable(tableName))
+        // Verificar que no exista el archivo, además verificar ciertas propiedades del
+        // nombre
+        if (FileManagement.searchForTable(tableName))
             throw new FileAlreadyExistsException("Nombre de tabla repetido");
 
         // Boolean function que valida el nombre
@@ -125,11 +126,10 @@ public class Parser {
         String arguments = query.substring(query.indexOf("(") + 1, query.length() - 1);
         String[] argumentsBreak = arguments.split(",");
 
-        for (int i = 0; i < argumentsBreak.length; i++) 
+        for (int i = 0; i < argumentsBreak.length; i++)
             argumentsBreak[i] = argumentsBreak[i].trim();
-        
 
-        // Recorrer cada uno de los argumentos, se busca que al menos exista: 
+        // Recorrer cada uno de los argumentos, se busca que al menos exista:
         // * Una y sólo una primary key
         // * Por lo menos un tipo de dato
         // * Que tenga un nombre la variable
@@ -141,8 +141,8 @@ public class Parser {
         ArrayList<TypeBuilder> typesOfTable = new ArrayList<>();
 
         boolean hasPK = false;
-        try{
-            for(String s : argumentsBreak){
+        try {
+            for (String s : argumentsBreak) {
                 String type = "", length = "";
                 boolean canBeNull = true, isPk = false;
 
@@ -151,66 +151,69 @@ public class Parser {
                 // Check for name
                 String columnName = individualArgumentBreak[0];
                 Utilities.nameValidations(columnName);
-                if(assignedColumnNames.contains(columnName))
+                if (assignedColumnNames.contains(columnName))
                     throw new IllegalArgumentException("Nombre de columna repetido");
 
                 // Check for type
-                for(String substr : individualArgumentBreak) {
+                for (String substr : individualArgumentBreak) {
                     ArrayList<String> types = Utilities.getVectorOfDatatypes();
-                    
-                    for(String t : types)   
-                        if(substr.toUpperCase().contains(t))
-                            if(type.equals(""))
+
+                    for (String t : types)
+                        if (substr.toUpperCase().contains(t))
+                            if (type.equals(""))
                                 type = substr;
                             else
                                 throw new IllegalArgumentException("No se pueden tener dos tipos de datos");
 
                 }
-                if(type.equals("")) throw new IllegalArgumentException("No se encontró el tipo de dato");
+                if (type.equals(""))
+                    throw new IllegalArgumentException("No se encontró el tipo de dato");
 
                 // Check for length
                 // also check if the length is invalid
-                if(type.contains("("))
+                if (type.contains("("))
                     length = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
                 System.out.println(type);
-                if(!(length.equalsIgnoreCase(""))&&(type.toLowerCase().contains("int")||type.toLowerCase().contains("date")))
+                if (!(length.equalsIgnoreCase(""))
+                        && (type.toLowerCase().contains("int") || type.toLowerCase().contains("date")))
                     throw new IllegalArgumentException("INT y DATE no pueden tener precisión");
 
                 // try to parse length
-                if(!length.equals(""))
+                if (!length.equals(""))
                     try {
                         System.out.println("trueno");
                         int integer = Integer.parseInt(length);
-                        if(integer!=-1&&integer<=0)
+                        if (integer != -1 && integer <= 0)
                             throw new NumberFormatException("Longitud inválida");
                     } catch (Exception e) {
                         throw new NumberFormatException("Longitud no válida");
                     }
 
-                if(s.toUpperCase().contains("NOT NULL"))
+                if (s.toUpperCase().contains("NOT NULL"))
                     canBeNull = false;
-                else if(s.toUpperCase().contains("NULL"))
+                else if (s.toUpperCase().contains("NULL"))
                     canBeNull = true;
 
-                if(s.toUpperCase().contains("PRIMARY KEY"))
-                    if(s.toUpperCase().contains("NULL")&&!s.toUpperCase().contains("NOT NULL"))
+                if (s.toUpperCase().contains("PRIMARY KEY"))
+                    if (s.toUpperCase().contains("NULL") && !s.toUpperCase().contains("NOT NULL"))
                         throw new IllegalArgumentException("No puede ser PK y a la vez nula");
-                    else if(hasPK)
+                    else if (hasPK)
                         throw new IllegalArgumentException("No se pueden tener dos PK");
                     else {
                         hasPK = true;
                         isPk = true;
-                    } 
-                
+                    }
+
                 assignedColumnNames.add(columnName.trim());
-                typesOfTable.add(new TypeBuilder(columnName.trim(), canBeNull, ((length.equals("") ? type : type.substring(0, type.indexOf("(")))),
-                 ((!length.equals("") ? Integer.parseInt(length) : -1)), isPk));
-            }    
-        } catch (IndexOutOfBoundsException e){
+                typesOfTable.add(new TypeBuilder(columnName.trim(), canBeNull,
+                        ((length.equals("") ? type : type.substring(0, type.indexOf("(")))),
+                        ((!length.equals("") ? Integer.parseInt(length) : -1)), isPk));
+            }
+        } catch (IndexOutOfBoundsException e) {
             throw new IndexOutOfBoundsException("Argumentos dentro de la creación de columnas inválidos");
         }
 
-        if(!hasPK)
+        if (!hasPK)
             throw new IllegalArgumentException("No se puede crear una tabla sin PK");
         FileManagement.createFileTable(tableName, typesOfTable);
 
@@ -551,27 +554,28 @@ public class Parser {
             }
         }
 
-        // this is the header of the table itself that i want to analyze
-        String headerOfTable = Utilities.getHeaderOfTable(tableName);
-        ArrayList<TypeBuilder> types = FileManagement.decompressInfo(tableName);
+        String tableHeader = Utilities.getHeaderOfTable(tableName);
 
-        HashMap<String, Integer> indexMap = new HashMap<>();
-        HashMap<String, String> typeMap = new HashMap<>();
-
-        String[] headerOfTableBreak = headerOfTable.split(",");
-        for (int i = 0; i < headerOfTableBreak.length; i++) {
-            indexMap.put(headerOfTableBreak[i], i);
-
-            for (int j = 0; j < types.size(); j++) 
-                if(types.get(j).getName().equals(headerOfTableBreak[i]))
-                    typeMap.put(headerOfTableBreak[i], types.get(j).getDataType());
+        HashSet<Integer> indexes = new HashSet<>();
+        if (header.equals("*")) {
+            String[] tableHeaderBreak = tableHeader.split(",");
+            for (int i = 0; i < tableHeaderBreak.length; i++)
+                indexes.add(i);
+        } else {
+            String[] tableHeaderBreak = tableHeader.split(",");
+            for (int i = 0; i < tableHeaderBreak.length; i++)
+                for (int j = 0; j < header.split(",").length; j++)
+                    if (tableHeaderBreak[i].equals(header.split(",")[j])) {
+                        indexes.add(i);
+                        break;
+                    }
         }
 
         // for(String key : indexMap.keySet())
-        //     System.out.println(key + " " + indexMap.get(key));
+        // System.out.println(key + " " + indexMap.get(key));
 
         // for(String key : typeMap.keySet())
-        //     System.out.println(key + " " + typeMap.get(key));
+        // System.out.println(key + " " + typeMap.get(key));
 
         // Condicionales guarda el string de los condicionales
         // System.out.println(condicionales);
@@ -580,21 +584,36 @@ public class Parser {
         // for(String key : alias.keySet())
         // System.out.println(key + " " + alias.get(key));
 
-            ArrayList<String> resultTable = new ArrayList<>();
-            try (BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))){
-                String line;
-                line = br.readLine();
-                line = null;
-                while ((line = br.readLine()) != null) {
-                    if(Where.manageWhere(condicionales, line, indexMap, typeMap))
-                        resultTable.add(line);
-                }
-            } catch (Exception e) {
-                throw new FileNotFoundException("No se encontró el archivo");
+        ArrayList<String> resultTable = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(
+                new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
+            String line;
+            resultTable.add(line = br.readLine());
+            while ((line = br.readLine()) != null) {
+                if (Where.manageWhere(condicionales, line, tableName))
+                    resultTable.add(line);
             }
+        } catch (Exception e) {
+            throw new FileNotFoundException("No se encontró el archivo");
+        }
 
-            for(String s : resultTable)
-                System.out.println(s);
+        String[] headerBreak = resultTable.get(0).split(",");
+
+        for (int i = 0; i < headerBreak.length; i++)
+            if (indexes.contains(i))
+                if (alias.containsKey(headerBreak[i]))
+                    System.out.print(alias.get(headerBreak[i]) + " ");
+                else
+                    System.out.print(headerBreak[i] + " ");
+        System.out.println();
+        for (int i = 1; i < resultTable.size(); i++) {
+            String[] lineBrk = resultTable.get(i).split(",");
+            for (int j = 0; j < lineBrk.length; j++)
+                if (indexes.contains(j))
+                    System.out.print(lineBrk[j] + " ");
+            System.out.println();
+        }
+
 
         return "Select realizado con éxito";
     }
@@ -917,7 +936,7 @@ public class Parser {
             if (!flag)
                 throw new IllegalArgumentException("Set inválido");
         }
-        
+
         ArrayList<TypeBuilder> tp = FileManagement.decompressInfo(tableName);
         boolean hasPK = false;
 
