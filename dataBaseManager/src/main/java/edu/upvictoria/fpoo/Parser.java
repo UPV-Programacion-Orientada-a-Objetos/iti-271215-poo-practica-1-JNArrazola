@@ -27,6 +27,7 @@ public class Parser {
      * filter if there's a typo
      */
     public static String parseQuery(String query) throws Exception {
+        FileManagement.initialValidations();
         String brokeStr[] = query.split(" ");
 
         try {
@@ -170,7 +171,6 @@ public class Parser {
                 // also check if the length is invalid
                 if (type.contains("("))
                     length = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
-                System.out.println(type);
                 if (!(length.equalsIgnoreCase(""))
                         && (type.toLowerCase().contains("int") || type.toLowerCase().contains("date")))
                     throw new IllegalArgumentException("INT y DATE no pueden tener precisión");
@@ -178,7 +178,6 @@ public class Parser {
                 // try to parse length
                 if (!length.equals(""))
                     try {
-                        System.out.println("trueno");
                         int integer = Integer.parseInt(length);
                         if (integer != -1 && integer <= 0)
                             throw new NumberFormatException("Longitud inválida");
@@ -739,6 +738,17 @@ public class Parser {
                 throw new IllegalArgumentException("Set inválido");
         }
 
+        ArrayList<TypeBuilder> tb = FileManagement.decompressInfo(tableName);
+        // i need to check types
+        for (String key : values.keySet()) {
+            for (TypeBuilder type : tb) {
+                if (type.getName().equals(key)) {
+                    checkType(type, values.get(key));
+                    break;
+                }
+            }
+        }
+
         String condicionales = "";
         for (int i = 0; i < words.length; i++) {
             if (words[i].equalsIgnoreCase("WHERE") && i + 1 < words.length) {
@@ -779,16 +789,21 @@ public class Parser {
             throw new IOException("No se pudo abrir el archivo");
         }
 
-        for (String line : lines)
-            System.out.println(line);
+        int indPrimaryKey = 0;
+        for (int i = 0; i < tb.size(); i++) 
+            if(tb.get(i).isPrimaryKey()){
+                indPrimaryKey = i;
+                break;
+            }
+        
 
         HashSet<String> ids = new HashSet<>();
         for (int i = 1; i < lines.size(); i++) {
             String[] lineBrk = lines.get(i).split(",");
-            if (ids.contains(lineBrk[0]))
+            if (ids.contains(lineBrk[indPrimaryKey]))
                 throw new IllegalArgumentException(
                         "Esta sentencia UPDATE asignaría dos ID's iguales, lo cual no es permitido");
-            ids.add(lineBrk[0]);
+            ids.add(lineBrk[indPrimaryKey]);
         }
 
         try (BufferedWriter bw = new BufferedWriter(

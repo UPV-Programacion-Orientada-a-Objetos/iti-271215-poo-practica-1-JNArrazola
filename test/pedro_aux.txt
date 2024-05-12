@@ -1,0 +1,2 @@
+id,true,int,-1,true
+string,true,varchar,20,false

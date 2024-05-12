@@ -13,9 +13,6 @@ import java.io.FileNotFoundException;
 public class App {
 
     public static void main(String[] args) {
-        // Initial validations for the entire work of the program
-        FileManagement.initialValidations();
-
         // App launcherl
         App app = new App();
         app.run();

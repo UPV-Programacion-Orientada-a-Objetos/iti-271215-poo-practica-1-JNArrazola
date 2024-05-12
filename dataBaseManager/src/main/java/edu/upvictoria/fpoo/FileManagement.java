@@ -10,9 +10,6 @@ import java.util.ArrayList;
  * @matricula 2230023
  * */
 public class FileManagement {
-    // Path in which i will store the that contains the path to the database
-    private static String folderPath = new File("").getAbsolutePath() + "/appPath";
-
     // path to the database
     private static String databasePath = null;
 
@@ -21,11 +18,6 @@ public class FileManagement {
         Utilities.fillReservedWords();
         Utilities.fillTypes();
         Utilities.fillLogicOperators();
-
-        File file = new File(folderPath);
-        if(!file.exists()){
-            file.mkdir();
-        }
     }
 
     /**

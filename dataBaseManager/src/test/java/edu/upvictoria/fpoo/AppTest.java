@@ -15,9 +15,6 @@ public class AppTest
         super(testName);
     }
 
-    private final static String testTable = new File("").getAbsolutePath() + "/test/";
-    private final static String tableName = "testTable";
-
     public void testApp() {
         assertTrue(true);
     }
@@ -174,7 +171,7 @@ public class AppTest
             Parser.parseQuery(query);
         });
 
-        assertEquals("No se puede crear una tabla sin primary key definida", generatedException.getMessage());
+        assertEquals("No se puede crear una tabla sin PK", generatedException.getMessage());
     }
 
     /**
@@ -192,7 +189,7 @@ public class AppTest
             Parser.parseQuery(query);
         });
 
-        assertEquals("Argumentos incorrectos", generatedException.getMessage());
+        assertEquals("Nombre de tabla repetido", generatedException.getMessage());
         new File(new File("").getAbsolutePath() + "/JOSHUA.csv").delete();
         new File(new File("").getAbsolutePath() + "/JOSHUA_aux.txt").delete();
     }
@@ -290,7 +287,7 @@ public class AppTest
             Parser.parseQuery("use /home/jarrazola/Documents/iti-271215-poo-practica-1-JNArrazola/test/");
             Parser.parseQuery("CREATE TABLE PRUEBA(ID INT NOT NULL PRIMARY KEY, ID INT NOT NULL PRIMARY KEY)");
         });
-        assertEquals("No puede haber dos primary keys", e.getMessage());
+        assertEquals("Nombre de columna repetido", e.getMessage());
     }
 
     
