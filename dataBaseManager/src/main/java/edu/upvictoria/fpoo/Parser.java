@@ -549,30 +549,22 @@ public class Parser {
                 if (!flag)
                     throw new IllegalArgumentException("Parámetros desconocidos en el select");
             }
-        } else {
-            header = Utilities.getHeaderOfTable(tableName);
         }
 
-        // Indexes to print are the indexes of the columns that the user selected
-        HashSet<Integer> indexesToPrint = new HashSet<>();
-        
+        // this is the header of the table itself that i want to analyze
         String headerOfTable = Utilities.getHeaderOfTable(tableName);
+        ArrayList<TypeBuilder> types = FileManagement.decompressInfo(tableName);
 
-        // header contains the headers that the user selected
-        // System.out.println(header);
+        HashMap<String, Integer> indexMap = new HashMap<>();
+        HashMap<String, String> typeMap = new HashMap<>();
 
-        // header of table contains the header of the actual table we are looking for
-        // System.out.println(headerOfTable);
-        
-        String[] hdrBreak = header.split(",");
-        String[] hdrTableBreak = headerOfTable.split(",");
-        for (int i = 0; i < hdrBreak.length; i++) {
-            for (int j = 0; j < hdrTableBreak.length; j++) {
-                if(hdrBreak[i].equals(hdrTableBreak[j])){
-                    indexesToPrint.add(j);
-                    break;
-                }
-            }
+        String[] headerOfTableBreak = headerOfTable.split(",");
+        for (int i = 0; i < headerOfTableBreak.length; i++) {
+            indexMap.put(headerOfTableBreak[i], i);
+
+            for (int j = 0; j < types.size(); j++) 
+                if(types.get(j).getName().equals(headerOfTableBreak[i]))
+                    typeMap.put(headerOfTableBreak[i], types.get(j).getDataType());
         }
 
         // for(String key : indexMap.keySet())
@@ -588,37 +580,22 @@ public class Parser {
         // for(String key : alias.keySet())
         // System.out.println(key + " " + alias.get(key));
 
-        ArrayList<String> resultTable = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))){
-            String line;
-            while ((line = br.readLine()) != null) {
-                if(Where.manageWhere(condicionales, line, tableName))
-                    resultTable.add(line);
+            ArrayList<String> resultTable = new ArrayList<>();
+            try (BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))){
+                String line;
+                line = br.readLine();
+                line = null;
+                while ((line = br.readLine()) != null) {
+                    if(Where.manageWhere(condicionales, line, indexMap, typeMap))
+                        resultTable.add(line);
+                }
+            } catch (Exception e) {
+                throw new FileNotFoundException("No se encontró el archivo");
             }
-        } catch (Exception e) {
-            throw new FileNotFoundException("No se encontró el archivo");
-        }
 
-        for (int i = 0; i < resultTable.size(); i++) {
-            if(i==0){
-                String[] headerBreak = header.split(",");
-                for (int j = 0; j < headerBreak.length; j++) {
-                    if(alias.containsKey(headerBreak[j]))
-                        System.out.print(alias.get(headerBreak[j]) + " ");
-                    else
-                        System.out.print(headerBreak[j] + " ");
-                }
-                System.out.println();
-            } else {
-                String[] lineBreak = resultTable.get(i).split(",");
-                for (int j = 0; j < lineBreak.length; j++) {
-                    if(indexesToPrint.contains(j))
-                        System.out.print(lineBreak[j] + " ");
-                }
-                System.out.println();
-            }
-        }
-        
+            for(String s : resultTable)
+                System.out.println(s);
+
         return "Select realizado con éxito";
     }
 
