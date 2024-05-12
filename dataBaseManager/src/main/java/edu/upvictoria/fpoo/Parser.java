@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,199 +100,119 @@ public class Parser {
         if (FileManagement.getDatabasePath() == null)
             throw new NullPointerException("No hay path asignado");
 
-        String wordFormed = "";
+        // Analizar primera parte del string (CREATE TABLE name)
+        if(query.indexOf("(")==-1)
+            throw new IllegalArgumentException("Sintaxis incorrecta");
+        
+        String firstPart = query.substring(0, query.indexOf("("));
+        String[] firstPartBreak = firstPart.split(" ");
 
-        int index;
-        try {
-            for (index = 0; index < query.length(); index++) {
-                if (query.charAt(index) == ' ') {
-                    if (wordFormed.equalsIgnoreCase("TABLE")) {
-                        ++index;
-                        break;
-                    }
-                    wordFormed = "";
-                } else if (query.charAt(index) != ' ')
-                    wordFormed += query.charAt(index);
-            }
-        } catch (IndexOutOfBoundsException e) {
-            throw new IndexOutOfBoundsException("Sintaxis equivocada");
-        }
+        // esto quiere decir que no se entiende donde esta el create table|
+        if(firstPartBreak.length < 3)
+            throw new Exception("Error de sintaxis");
 
-        String tableName = "";
+        // Verificar las palabras
+        String tableName = firstPartBreak[2];
 
-        for (int i = index; i < query.length(); i++) {
-            if (query.charAt(i) == '(') {
-                index = i;
-                break;
-            }
-            tableName += query.charAt(i);
-        }
+        // Verificar que no exista el archivo, además verificar ciertas propiedades del nombre
+        if(FileManagement.searchForTable(tableName))
+            throw new FileAlreadyExistsException("Nombre de tabla repetido");
 
-        if (tableName.equals(""))
-            throw new IllegalArgumentException("Nombre de tabla vacío");
-        tableName = tableName.trim();
+        // Boolean function que valida el nombre
+        Utilities.nameValidations(tableName);
 
-        if(tableName.length()==1)
-            throw new IllegalArgumentException("El nombre de la tabla no puede ser tan corto");
+        // Extraer los argumentos y separarlos
+        String arguments = query.substring(query.indexOf("(") + 1, query.length() - 1);
+        String[] argumentsBreak = arguments.split(",");
 
-        if (!Utilities.hasValidChars(tableName)) {
-            throw new IllegalArgumentException("El nombre de la tabla no tiene caracteres válidos");
-        } else if (!FileManagement.verifyDuplicatesTableName(tableName)) {
-            throw new IllegalArgumentException("La entrada ya existe");
-        }
+        for (int i = 0; i < argumentsBreak.length; i++) 
+            argumentsBreak[i] = argumentsBreak[i].trim();
+        
 
-        String columnsStr = "";
-        for (int i = index; i < query.length(); i++) {
+        // Recorrer cada uno de los argumentos, se busca que al menos exista: 
+        // * Una y sólo una primary key
+        // * Por lo menos un tipo de dato
+        // * Que tenga un nombre la variable
+        // * Si no se especifica not null, se asume que puede ser null
+        // * Si es primary key no puede ser null
+        // * No se le puede especificar longitud a una variable int o date
 
-            if ((i == query.length() - 1 && query.charAt(i) == ')') ||
-                    columnsStr.isEmpty() && (query.charAt(i) == '('))
-                continue;
+        HashSet<String> assignedColumnNames = new HashSet<>();
+        ArrayList<TypeBuilder> typesOfTable = new ArrayList<>();
 
-            columnsStr += query.charAt(i);
-        }
+        boolean hasPK = false;
+        try{
+            for(String s : argumentsBreak){
+                String type = "", length = "";
+                boolean canBeNull = true, isPk = false;
 
-        if (columnsStr.isEmpty())
-            throw new IllegalArgumentException("Faltan argumentos (columnas)");
+                String[] individualArgumentBreak = s.split(" ");
 
-        columnsStr = columnsStr.trim();
-        ArrayList<String> parseCreateRequest = new ArrayList<String>();
+                // Check for name
+                String columnName = individualArgumentBreak[0];
+                Utilities.nameValidations(columnName);
+                if(assignedColumnNames.contains(columnName))
+                    throw new IllegalArgumentException("Nombre de columna repetido");
 
-        String formedWord = "";
-        for (int i = 0; i < columnsStr.length(); i++) {
-            if (columnsStr.charAt(i) != ' ') {
-                formedWord += columnsStr.charAt(i);
+                // Check for type
+                for(String substr : individualArgumentBreak) {
+                    ArrayList<String> types = Utilities.getVectorOfDatatypes();
+                    
+                    for(String t : types)   
+                        if(substr.toUpperCase().contains(t))
+                            if(type.equals(""))
+                                type = substr;
+                            else
+                                throw new IllegalArgumentException("No se pueden tener dos tipos de datos");
 
-                if (i == columnsStr.length() - 1)
-                    parseCreateRequest.add(formedWord.trim());
-            } else if (!formedWord.isEmpty()) {
-                parseCreateRequest.add(formedWord.trim());
-                formedWord = "";
-            }
-        }
-
-        String midProcessing = "";
-        for (String S : parseCreateRequest)
-            midProcessing += (S + " ");
-
-        String[] brkQuery = midProcessing.split(",");
-
-        for (int i = 0; i < brkQuery.length; i++)
-            brkQuery[i] = brkQuery[i].trim();
-
-        ArrayList<TypeBuilder> types = new ArrayList<TypeBuilder>();
-        boolean primaryKey = false;
-        for (String s : brkQuery) {
-            String name = "", length = "", type = "";
-            boolean isPrimaryKey = false, canBeNull = true;
-
-            if (s.toUpperCase().contains("PRIMARY KEY") && primaryKey)
-                throw new RuntimeException("No puede haber dos primary keys");
-
-            String[] brokenSentence = s.split(" ");
-
-            if (brokenSentence.length == 0)
-                throw new IllegalArgumentException("Sintaxis incorrecta");
-
-            // Name asignation
-            try {
-                if (brokenSentence.length > 6)
-                    throw new IllegalArgumentException("Argumentos incorrectos");
-                name = brokenSentence[0];
-
-                if (!Utilities.hasValidChars(name))
-                    throw new IllegalArgumentException("Nombres de columna inválidos");
-
-                // Determine type of the row
-                if (brokenSentence[1].contains("(")) {
-                    String t = "";
-                    String l = "";
-                    boolean flag = false;
-
-                    for (int i = 0; i < brokenSentence[1].length(); i++) {
-                        if (brokenSentence[1].charAt(i) == '(' || flag) {
-                            if (Character.isDigit(brokenSentence[1].charAt(i)))
-                                l += brokenSentence[1].charAt(i);
-
-                            flag = true;
-                        } else
-                            t += brokenSentence[1].charAt(i);
-                    }
-                    length = l;
-                    type = t;
-
-                    if (type.equalsIgnoreCase("INT") ||
-                            type.equalsIgnoreCase("DATE"))
-                        throw new IllegalArgumentException("No se le puede añadir precisión a estos tipos de datos");
-
-                } else {
-                    type = brokenSentence[1];
-                    length = "-1";
                 }
-            } catch (IndexOutOfBoundsException e) {
-                System.out.println("Sintaxis incorrecta");
-            }
-            // Ending of determine type block
+                if(type.equals("")) throw new IllegalArgumentException("No se encontró el tipo de dato");
 
-            // Validations
-            if (Utilities.isReservedWord(name.toUpperCase()) || Utilities.isType(name.toUpperCase()))
-                throw new IllegalArgumentException("El nombre no puede tener palabras reservadas");
+                // Check for length
+                // also check if the length is invalid
+                if(type.contains("("))
+                    length = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
+                System.out.println(type);
+                if(!(length.equalsIgnoreCase(""))&&(type.toLowerCase().contains("int")||type.toLowerCase().contains("date")))
+                    throw new IllegalArgumentException("INT y DATE no pueden tener precisión");
 
-            if (!Utilities.isType(type))
-                throw new IllegalArgumentException("El nombre no puede ser un tipo de dato");
+                // try to parse length
+                if(!length.equals(""))
+                    try {
+                        System.out.println("trueno");
+                        int integer = Integer.parseInt(length);
+                        if(integer!=-1&&integer<=0)
+                            throw new NumberFormatException("Longitud inválida");
+                    } catch (Exception e) {
+                        throw new NumberFormatException("Longitud no válida");
+                    }
 
-            try {
-                Integer parse = Integer.parseInt(length);
-                if (parse != -1 && parse <= 0)
-                    throw new NumberFormatException("Longitud inválida");
-            } catch (NumberFormatException e) {
-                throw new NumberFormatException("Argumento de longitud incorrecto");
-            }
-
-            // Validations
-            try {
-                if (brokenSentence[2].equalsIgnoreCase("NOT") && brokenSentence[3].equalsIgnoreCase("NULL"))
+                if(s.toUpperCase().contains("NOT NULL"))
                     canBeNull = false;
-                else if (brokenSentence[2].equalsIgnoreCase("NULL"))
+                else if(s.toUpperCase().contains("NULL"))
                     canBeNull = true;
-                else if (brokenSentence[2].equalsIgnoreCase("PRIMARY") && brokenSentence[3].equalsIgnoreCase("KEY")) {
-                    if (primaryKey)
-                        throw new RuntimeException("No puede haber dos primary keys");
-                    isPrimaryKey = true;
-                    primaryKey = true;
-                } else
-                    throw new RuntimeException("Sintaxis incorrecta");
-            } catch (RuntimeException e) {
-            }
 
-            try {
-                if (brokenSentence[4].equalsIgnoreCase("PRIMARY") && brokenSentence[5].equalsIgnoreCase("KEY")) {
-                    if (primaryKey)
-                        throw new RuntimeException("No puede haber dos primary keys");
-                    isPrimaryKey = true;
-                    primaryKey = true;
-                }
-            } catch (IndexOutOfBoundsException ignored) {
-            } catch (RuntimeException e) {
-                throw new RuntimeException();
-            }
-
-            for (TypeBuilder t : types)
-                if (t.getName().equalsIgnoreCase(name))
-                    throw new IllegalArgumentException("No puede haber dos columnas con el mismo nombre");
-
-            if (!s.contains("NOT NULL") && s.contains("NULL") && s.contains("PRIMARY KEY"))
-                throw new IllegalArgumentException("No puede ser nulo y a la vez primary key");
-
-            if(name.trim().length()==1)
-                throw new IllegalArgumentException("El nombre de la columna no puede ser tan corto");
+                if(s.toUpperCase().contains("PRIMARY KEY"))
+                    if(s.toUpperCase().contains("NULL")&&!s.toUpperCase().contains("NOT NULL"))
+                        throw new IllegalArgumentException("No puede ser PK y a la vez nula");
+                    else if(hasPK)
+                        throw new IllegalArgumentException("No se pueden tener dos PK");
+                    else {
+                        hasPK = true;
+                        isPk = true;
+                    } 
                 
-            types.add(new TypeBuilder(name.trim(), canBeNull, type.trim(), Integer.parseInt(length), isPrimaryKey));
+                assignedColumnNames.add(columnName.trim());
+                typesOfTable.add(new TypeBuilder(columnName.trim(), canBeNull, ((length.equals("") ? type : type.substring(0, type.indexOf("(")))),
+                 ((!length.equals("") ? Integer.parseInt(length) : -1)), isPk));
+            }    
+        } catch (IndexOutOfBoundsException e){
+            throw new IndexOutOfBoundsException("Argumentos dentro de la creación de columnas inválidos");
         }
 
-        if (!primaryKey)
-            throw new RuntimeException("No se puede crear una tabla sin primary key definida");
-
-        FileManagement.createFileTable(tableName, types);
+        if(!hasPK)
+            throw new IllegalArgumentException("No se puede crear una tabla sin PK");
+        FileManagement.createFileTable(tableName, typesOfTable);
 
         return "Tabla creada correctamente";
     }
@@ -494,14 +415,14 @@ public class Parser {
         switch (T.getDataType()) {
             case "int":
                 try {
-                    Integer p = Integer.parseInt(value);
+                    Integer.parseInt(value);
                 } catch (NumberFormatException e) {
                     throw new NumberFormatException("Tipo de dato incorrecto");
                 }
                 return true;
             case "float":
                 try {
-                    Float p = Float.parseFloat(value);
+                    Float.parseFloat(value);
                 } catch (NumberFormatException e) {
                     throw new NumberFormatException("Tipo de dato incorrecto");
                 }
@@ -511,7 +432,7 @@ public class Parser {
 
             case "double":
                 try {
-                    Double p = Double.parseDouble(value);
+                    Double.parseDouble(value);
                 } catch (NumberFormatException e) {
                     throw new NumberFormatException("Tipo de dato incorrecto");
                 }
@@ -628,7 +549,37 @@ public class Parser {
                 if (!flag)
                     throw new IllegalArgumentException("Parámetros desconocidos en el select");
             }
+        } else {
+            header = Utilities.getHeaderOfTable(tableName);
         }
+
+        // Indexes to print are the indexes of the columns that the user selected
+        HashSet<Integer> indexesToPrint = new HashSet<>();
+        
+        String headerOfTable = Utilities.getHeaderOfTable(tableName);
+
+        // header contains the headers that the user selected
+        // System.out.println(header);
+
+        // header of table contains the header of the actual table we are looking for
+        // System.out.println(headerOfTable);
+        
+        String[] hdrBreak = header.split(",");
+        String[] hdrTableBreak = headerOfTable.split(",");
+        for (int i = 0; i < hdrBreak.length; i++) {
+            for (int j = 0; j < hdrTableBreak.length; j++) {
+                if(hdrBreak[i].equals(hdrTableBreak[j])){
+                    indexesToPrint.add(j);
+                    break;
+                }
+            }
+        }
+
+        // for(String key : indexMap.keySet())
+        //     System.out.println(key + " " + indexMap.get(key));
+
+        // for(String key : typeMap.keySet())
+        //     System.out.println(key + " " + typeMap.get(key));
 
         // Condicionales guarda el string de los condicionales
         // System.out.println(condicionales);
@@ -637,82 +588,37 @@ public class Parser {
         // for(String key : alias.keySet())
         // System.out.println(key + " " + alias.get(key));
 
-        boolean containsWhere = false;
-        if (query.contains("WHERE") || query.contains("where")) {
-            manageWhere(condicionales, tableName);
-            containsWhere = true;
+        ArrayList<String> resultTable = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))){
+            String line;
+            while ((line = br.readLine()) != null) {
+                if(Where.manageWhere(condicionales, line, tableName))
+                    resultTable.add(line);
+            }
+        } catch (Exception e) {
+            throw new FileNotFoundException("No se encontró el archivo");
         }
 
-        String path = ((containsWhere) ? (new File("").getAbsolutePath()) + "/temporalAuxInfo.csv"
-                : FileManagement.getDatabasePath() + tableName + ".csv");
-
-        if ((!new File(path).exists())) {
-            Utilities.deleteFilesFromWhere();
-            throw new IllegalArgumentException("WHERE inválido");
-        }
-
-        if (header.equals("*")) {
-            try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-                String line = br.readLine();
-                String[] headerBrk = line.split(",");
-
-                for (int i = 0; i < headerBrk.length; i++) {
-                    if (alias.containsKey(headerBrk[i]))
-                        System.out.print(alias.get(headerBrk[i]) + " ");
+        for (int i = 0; i < resultTable.size(); i++) {
+            if(i==0){
+                String[] headerBreak = header.split(",");
+                for (int j = 0; j < headerBreak.length; j++) {
+                    if(alias.containsKey(headerBreak[j]))
+                        System.out.print(alias.get(headerBreak[j]) + " ");
                     else
-                        System.out.print(headerBrk[i] + " ");
+                        System.out.print(headerBreak[j] + " ");
                 }
                 System.out.println();
-
-                while ((line = br.readLine()) != null) {
-                    String[] arrBrk = line.split(",");
-                    for (int i = 0; i < arrBrk.length; i++) {
-                        System.out.print(arrBrk[i] + " ");
-                    }
-                    System.out.println();
-                }
-            } catch (IOException e) {
-                throw new IOException("Parámetros del select incorrectos");
-            }
-        } else {
-            String[] headerBrk = header.split(",");
-            try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-                String line = br.readLine();
-                String[] headerFile = line.split(",");
-                ArrayList<Integer> indexes = new ArrayList<>();
-
-                for (int i = 0; i < headerBrk.length; i++) {
-                    for (int j = 0; j < headerFile.length; j++) {
-                        if (headerBrk[i].equals(headerFile[j])) {
-                            indexes.add(j);
-                            break;
-                        }
-                    }
-                }
-
-                for (int i = 0; i < headerBrk.length; i++) {
-                    if (alias.containsKey(headerBrk[i]))
-                        System.out.print(alias.get(headerBrk[i]) + " ");
-                    else
-                        System.out.print(headerBrk[i] + " ");
+            } else {
+                String[] lineBreak = resultTable.get(i).split(",");
+                for (int j = 0; j < lineBreak.length; j++) {
+                    if(indexesToPrint.contains(j))
+                        System.out.print(lineBreak[j] + " ");
                 }
                 System.out.println();
-
-                while ((line = br.readLine()) != null) {
-                    String[] arrBrk = line.split(",");
-                    for (int i = 0; i < indexes.size(); i++) {
-                        System.out.print(arrBrk[indexes.get(i)] + " ");
-                    }
-                    System.out.println();
-                }
-            } catch (IOException e) {
-                throw new IOException("Parámetros del select incorrectos");
             }
         }
-
-        if (containsWhere)
-            Utilities.deleteFilesFromWhere();
-
+        
         return "Select realizado con éxito";
     }
 

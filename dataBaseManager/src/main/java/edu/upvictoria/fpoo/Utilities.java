@@ -1,6 +1,7 @@
 package edu.upvictoria.fpoo;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,6 +16,7 @@ import java.util.Set;
 public class Utilities {
     private static Set<String> reservedWords = new HashSet<String>();
     private static Set<String> types = new HashSet<String>();
+    private static Set<String> logicOperators = new HashSet<>();
     private static final BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
     /**
@@ -48,9 +50,11 @@ public class Utilities {
         reservedWords.add("BY");
         reservedWords.add("WHERE");
         reservedWords.add("SET");
-        reservedWords.add("AND");
-        reservedWords.add("OR");
-        reservedWords.add("NOT");
+    }
+
+    public static void fillLogicOperators(){
+        logicOperators.add("AND");
+        logicOperators.add("OR");
     }
 
     public static void fillTypes(){
@@ -69,11 +73,40 @@ public class Utilities {
         return types.contains(type.toUpperCase());
     }
 
+    public static boolean isLogic(String logic){
+        return logicOperators.contains(logic.toUpperCase());
+    }
+
+    public static boolean nameValidations(String name){
+        if(name.length() <= 1)
+            throw new IllegalArgumentException("Nombre demasiado corto");
+        else if(Utilities.isReservedWord(name)||Utilities.isType(name)||Utilities.isLogic(name))  
+            throw new IllegalArgumentException("El nombre no puede ser una palabra reservada");
+        else if(!Utilities.hasValidChars(name))
+            throw new IllegalArgumentException("El nombre contiene carácteres no permitidos");
+        return true;
+    }
+
+    /**
+     * Sometimes it is better to have an array instead of a vector
+     * specially when you don't want two datatypes
+     * @return
+      */
+    public static ArrayList<String> getVectorOfDatatypes(){
+        ArrayList<String> dataTypes = new ArrayList<>();
+        
+        for(String s : types)
+            dataTypes.add(s);
+        
+        return dataTypes;
+    }
+
     public static boolean hasValidChars(String str){
         return !(str.contains(".")|| str.contains("/")||
                 str.contains("|")||str.contains("&")||str.contains("=")
                 ||str.contains("<")||str.contains(">")||str.contains("!")
-                ||str.contains(".csv")||str.contains(".txt")||str.contains("_aux"));
+                ||str.contains(".csv")||str.contains(".txt")||str.contains("_aux")
+                ||str.contains(";")||str.contains(":"));
     }
 
     public static String readBuffer(){
@@ -111,5 +144,15 @@ public class Utilities {
         new File("dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.java").delete();
         new File("dataBaseManager/src/main/java/edu/upvictoria/fpoo/TablaTemp.class").delete();
         new File(new File("").getAbsolutePath()+"/temporalAuxInfo.csv").delete();
+    }
+
+    public static String getHeaderOfTable(String name) throws Exception {
+        String path = FileManagement.getDatabasePath() + name + ".csv";
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            return br.readLine();
+        } catch (Exception e) {
+            throw new Exception("No se encontró el archivo");
+        }
     }
 }

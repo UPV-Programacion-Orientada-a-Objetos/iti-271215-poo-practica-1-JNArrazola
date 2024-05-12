@@ -20,6 +20,7 @@ public class FileManagement {
     public static void initialValidations(){
         Utilities.fillReservedWords();
         Utilities.fillTypes();
+        Utilities.fillLogicOperators();
 
         File file = new File(folderPath);
         if(!file.exists()){
