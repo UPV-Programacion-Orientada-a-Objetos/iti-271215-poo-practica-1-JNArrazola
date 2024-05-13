@@ -52,13 +52,14 @@ public class Where {
 		String conditional = "";
 
 		for (int i = 0; i < condicionalesBreak.length; i++) {
-			if (Utilities.isLogic(condicionalesBreak[i])) {
+			if (Utilities.isLogic(condicionalesBreak[i].toUpperCase())) {
 				operators.add(condicionalesBreak[i]);
 				conditionals.add(conditional);
 				conditional = "";
 			} else
 				conditional += condicionalesBreak[i];
 		}
+		
 		if (!conditional.equals(""))
 			conditionals.add(conditional);
 
@@ -101,12 +102,14 @@ public class Where {
 
 		String[] operationBreak = operation.split(",");
 
-		if(operationBreak.length != 2)
-			throw new IllegalArgumentException("Error en la sentencia WHERE");
-
 		String name = operationBreak[0];
 		String value = operationBreak[1];
 		String typeValue = type.get(name);
+
+		if(operationBreak.length != 2)
+			throw new IllegalArgumentException("Error en la sentencia WHERE");
+
+		
 
 		if (typeValue == null)
 		throw new IllegalArgumentException("Columna en el where no encontrada");

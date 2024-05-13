@@ -578,6 +578,7 @@ public class Parser {
         // for(String key : alias.keySet())
         // System.out.println(key + " " + alias.get(key));
 
+        System.out.println(condicionales);
         ArrayList<String> resultTable = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(
                 new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
@@ -636,6 +637,7 @@ public class Parser {
             }
         }
 
+        System.out.println(condicionales);
         ArrayList<String> lines = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(
                 new FileReader(FileManagement.getDatabasePath() + tableName + ".csv"))) {
@@ -755,10 +757,11 @@ public class Parser {
                 for (int j = i + 1; j < words.length; j++) {
                     if (Utilities.isReservedWord(words[j]))
                         continue;
-                    condicionales += words[j];
+                    condicionales += words[j] + " ";
                 }
             }
         }
+        condicionales = condicionales.trim();
 
         ArrayList<String> lines = new ArrayList<>();
         lines.add(header);
