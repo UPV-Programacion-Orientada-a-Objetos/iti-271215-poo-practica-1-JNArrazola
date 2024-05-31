@@ -18,6 +18,7 @@ public class FileManagement {
         Utilities.fillReservedWords();
         Utilities.fillTypes();
         Utilities.fillLogicOperators();
+        Utilities.fillValidReservedWordsCreateTable();
     }
 
     /**

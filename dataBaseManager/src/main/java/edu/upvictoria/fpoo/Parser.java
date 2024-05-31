@@ -51,7 +51,11 @@ public class Parser {
                 return dropTable(query, brokeStr);
             }
         } catch (Exception e) {
+            Utilities.handleException(e);
             throw new Exception(e.getMessage());
+        } catch (Error e) {
+            Utilities.handleError(e);
+            throw new Error(e.getMessage());
         }
 
         return "No se reconoció la sentencia";
@@ -145,6 +149,13 @@ public class Parser {
                 boolean canBeNull = true, isPk = false;
 
                 String[] individualArgumentBreak = s.split(" ");
+                for (int i = 0; i < individualArgumentBreak.length; i++)
+                    individualArgumentBreak[i] = individualArgumentBreak[i].trim();
+
+                for (int i = 1; i < individualArgumentBreak.length; i++)
+                    if (!Utilities.isValidReservedWordCreateTable(individualArgumentBreak[i]))
+                        throw new IllegalArgumentException(
+                                individualArgumentBreak[i] + " no es una palabra reservada válida");
 
                 // Check for name
                 String columnName = individualArgumentBreak[0];
@@ -169,8 +180,14 @@ public class Parser {
 
                 // Check for length
                 // also check if the length is invalid
-                if (type.contains("("))
-                    length = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
+                if (type.contains("(")){
+                    if(type.contains(")"))
+                        length = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
+                    else
+                        throw new IllegalArgumentException("Falta cerrar el paréntesis");
+                    if(length.equals(""))
+                        throw new IllegalArgumentException("Longitud inválida");
+                }
                 if (!(length.equalsIgnoreCase(""))
                         && (type.toLowerCase().contains("int") || type.toLowerCase().contains("date")))
                     throw new IllegalArgumentException("INT y DATE no pueden tener precisión");
@@ -198,6 +215,7 @@ public class Parser {
                     else {
                         hasPK = true;
                         isPk = true;
+                        canBeNull = false;
                     }
 
                 assignedColumnNames.add(columnName.trim());
@@ -273,20 +291,43 @@ public class Parser {
         if (parts.length > 6)
             throw new RuntimeException("Query inválida");
 
-        String name = parts[2];
+        String name = "";
+        try {
+            name = parts[2];
+        } catch (IndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException("Faltó el nombre de la tabla");
+        }
 
         if (!FileManagement.searchForTable(name))
             throw new FileNotFoundException("No se encontró el archivo");
 
-        String columns = parts[3];
+        String columns = "";
+        try {
+            columns = parts[3];
+        } catch (IndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException("Faltaron columnas en el insert into");
+        }
 
         if (columns.equalsIgnoreCase("VALUES"))
             throw new IllegalArgumentException("Falta especificar columnas");
 
-        if (!parts[4].equalsIgnoreCase("VALUES"))
-            throw new IllegalArgumentException("Sintaxis no válida");
+        try {
+            if (!parts[4].equalsIgnoreCase("VALUES"))
+                throw new IllegalArgumentException("Sintaxis no válida");
+        } catch (IndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException("Faltaron valores en el insert into");
+        }
 
-        String values = parts[5];
+        String values = "";
+
+        try {
+            values = parts[5];
+        } catch (IndexOutOfBoundsException e) {
+            throw new IndexOutOfBoundsException("Faltaron valores en el insert into");
+        }
+
+        if (values.isEmpty())
+            throw new IllegalArgumentException("No se encontraron valores en el insert into");
 
         String[] colBrk = columns.split(",");
         String[] valBrk = values.split(",");
@@ -502,11 +543,11 @@ public class Parser {
                     alias.put(linea[0], linea[2]);
                     header += linea[0] + ",";
                 } else
-                    throw new Exception("Alias incorrectos");
+                    throw new Exception("Alias incorrectos: " + linea[2]);
             else if (linea.length == 1)
                 header += linea[0] + ",";
             else
-                throw new Exception("Sintaxis incorrecta");
+                throw new Exception("Sintaxis incorrecta: " + argsTrabajados[i]);
         }
         header = header.substring(0, header.length() - 1);
 
@@ -516,7 +557,7 @@ public class Parser {
             throw new Exception("Sintaxis incorrecta");
 
         if (!FileManagement.searchForTable(tableName))
-            throw new IOException("Tabla no encontrada");
+            throw new IOException("Tabla no encontrada: " + tableName);
 
         try {
             for (int i = index + 1; i < words.length; i++) {
@@ -544,7 +585,7 @@ public class Parser {
                     }
                 }
                 if (!flag)
-                    throw new IllegalArgumentException("Parámetros desconocidos en el select");
+                    throw new IllegalArgumentException("Parámetros desconocidos en el select: " + hdbrk[i]);
             }
         }
 

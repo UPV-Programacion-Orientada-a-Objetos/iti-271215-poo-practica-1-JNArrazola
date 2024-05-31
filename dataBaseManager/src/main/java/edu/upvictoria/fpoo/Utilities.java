@@ -5,9 +5,11 @@ import java.io.FileReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 /*
 * Class of Utilities to store common functions that doesn't fit in other classes
@@ -17,6 +19,7 @@ public class Utilities {
     private static Set<String> reservedWords = new HashSet<String>();
     private static Set<String> types = new HashSet<String>();
     private static Set<String> logicOperators = new HashSet<>();
+    private static final ArrayList<String> validReservedWordsCreateTable = new ArrayList<>();
     private static final BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
 
     /**
@@ -31,6 +34,28 @@ public class Utilities {
             System.out.println("Error leyendo query");
         }
         return query;
+    }
+
+    public static void fillValidReservedWordsCreateTable(){
+        validReservedWordsCreateTable.add("INT");
+        validReservedWordsCreateTable.add("VARCHAR");
+        validReservedWordsCreateTable.add("DATE");
+        validReservedWordsCreateTable.add("NOT");
+        validReservedWordsCreateTable.add("NULL");
+        validReservedWordsCreateTable.add("PRIMARY");
+        validReservedWordsCreateTable.add("KEY");
+        validReservedWordsCreateTable.add("DOUBLE");
+        validReservedWordsCreateTable.add("NOT");
+        validReservedWordsCreateTable.add("NULL");
+        validReservedWordsCreateTable.add("FLOAT");
+    }
+
+    public static boolean isValidReservedWordCreateTable(String word){
+        for(String s : validReservedWordsCreateTable)
+            if(word.toUpperCase().contains(s))
+                return true;
+
+        return false;
     }
 
     public static void fillReservedWords(){
@@ -154,5 +179,45 @@ public class Utilities {
         } catch (Exception e) {
             throw new Exception("No se encontró el archivo");
         }
+    }
+
+    public static void handleException(Exception e) throws Exception {
+        if(e.getMessage().toUpperCase().contains("out of bounds".toUpperCase()))
+            throw new IndexOutOfBoundsException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("begin".toUpperCase()))
+            throw new IllegalArgumentException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("NULL POINTER".toUpperCase()))
+            throw new NullPointerException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("ARITHMETIC".toUpperCase()))
+            throw new ArithmeticException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("ILLEGAL STATE".toUpperCase()))
+            throw new IllegalStateException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("FORMAT".toUpperCase()))
+            throw new IllegalArgumentException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("ACCESS".toUpperCase()))
+            throw new IllegalAccessException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("TYPE MISMATCH".toUpperCase()))
+            throw new ClassCastException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("NUMBER FORMAT".toUpperCase()))
+            throw new NumberFormatException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("SQL".toUpperCase()))
+            throw new SQLException("Error en la sentencia: Sintaxis inválida");
+
+        if(e.getMessage().toUpperCase().contains("TIMEOUT".toUpperCase()))
+            throw new TimeoutException("Error en la sentencia: Sintaxis inválida");
+    }
+
+    public static void handleError(Error e) throws Error {
+        if(e.getMessage().toUpperCase().contains("STACK".toUpperCase()))
+            throw new StackOverflowError("Error en la sentencia");
     }
 }
